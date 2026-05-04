@@ -1,0 +1,20 @@
+/.metadata/
+# 1. Build artifacts
+bin/
+build/
+*.class
+
+# 2. Metadata
+.metadata/
+.settings/
+.loadpath
+.recommenders/
+
+# 3. OS & IDE 임시 파일
+.DS_Store
+Thumbs.db
+*.swp
+
+# 4. Server Configuration
+Servers/
+.recommenders/
