@@ -3,16 +3,12 @@ bin/
 build/
 *.class
 
-# 2. Metadata
+# 2. Metadata, 개인 설정
 .metadata/
 .settings/
-.loadpath
-.recommenders/
+.classpath
+.project
 
-# 3. OS & IDE 임시 파일
-.DS_Store
-Thumbs.db
-*.swp
 
 # 4. Server Configuration
 Servers/
