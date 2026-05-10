@@ -7,16 +7,20 @@
 git clone https://github.com/IHDBT12/OHRM.git
 ```
 
+<img width="806" height="376" alt="image" src="https://github.com/user-attachments/assets/29a9a749-7cc3-43e5-8d06-9422dc7152e6" />
+<img width="827" height="425" alt="image" src="https://github.com/user-attachments/assets/82c380cf-9914-49f0-897f-7f814c3c5905" />
 
 - Servers 폴더와 같은 경로에 OHRM 폴더 생성후 해당 폴더에 git clone
-- git 경로 재설정
+
+<img width="817" height="865" alt="image" src="https://github.com/user-attachments/assets/49939f93-9488-467a-b980-a4ae9ae7b40d" />
+
 - dynamic web project 프로젝트명 OHRM 생성 (web module 5.0 선택 후 finish)
 
 
 
 
 ---
-
+## LEGACY
 ## Eclipse Project Import
 <img width="820" height="521" alt="image" src="https://github.com/user-attachments/assets/109d5d11-9e07-4181-8040-523be330a93b" />
 <img width="543" height="558" alt="image" src="https://github.com/user-attachments/assets/c204ea2b-2b1c-4326-a6fd-2aa71ab4aa4f" />
