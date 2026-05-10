@@ -7,14 +7,10 @@
 git clone https://github.com/IHDBT12/OHRM.git
 ```
 
-<img width="915" height="502" alt="image" src="https://github.com/user-attachments/assets/856e70a5-b715-4127-b955-ab7d58f9eca4" />
-<img width="1267" height="688" alt="image" src="https://github.com/user-attachments/assets/42882609-7573-4ab9-bce6-d0b53ea287fd" />
 
-- Servers 폴더와 같은 경로에 빈 폴더 생성후 해당 폴더에 git clone(빈 폴더에만 clone가능)
-- 내부 파일(라이센스, gitigno
+- Servers 폴더와 같은 경로에 OHRM 폴더 생성후 해당 폴더에 git clone
 - git 경로 재설정
 - dynamic web project 프로젝트명 OHRM 생성 (web module 5.0 선택 후 finish)
-+ Servers와 OHRM을 제외한 다른 프로젝트들 지워야함
 
 
 
