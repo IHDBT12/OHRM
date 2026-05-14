@@ -3,14 +3,14 @@
 
 # 초기 설정
 ## Repository Clone
-```
-git clone https://github.com/IHDBT12/OHRM.git
-```
 
 <img width="806" height="376" alt="image" src="https://github.com/user-attachments/assets/29a9a749-7cc3-43e5-8d06-9422dc7152e6" />
 <img width="827" height="425" alt="image" src="https://github.com/user-attachments/assets/82c380cf-9914-49f0-897f-7f814c3c5905" />
 
-- Servers 폴더와 같은 경로에 OHRM 폴더 생성후 해당 폴더에 git clone
+- Servers 폴더와 같은 경로에 OHRM 폴더 생성후 해당 폴더에 아래 명령어로 git clone
+```
+git clone https://github.com/IHDBT12/OHRM.git
+```
 
 <img width="817" height="865" alt="image" src="https://github.com/user-attachments/assets/49939f93-9488-467a-b980-a4ae9ae7b40d" />
 
