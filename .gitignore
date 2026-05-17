@@ -15,5 +15,5 @@ Servers/
 .recommenders/
 
 
-.jar
-.md
+*.jar
+*.md
