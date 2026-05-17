@@ -1,0 +1,7 @@
+<%@ page pageEncoding="UTF-8" %>
+<header class="topbar">
+    <div class="user-chip">
+        <div class="mini-avatar"><img src="<%= html(memberImageUrl) %>" alt=""></div>
+        <span><%= html(name) %></span>
+    </div>
+</header>

@@ -1,0 +1,98 @@
+.photo-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.photo-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.photo-card {
+    display: grid;
+    gap: 10px;
+}
+
+.photo-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 6px;
+    background: #111827;
+}
+
+.photo-detail img {
+    display: block;
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    background: #111827;
+    margin-bottom: 18px;
+}
+
+.photo-title {
+    font-weight: 800;
+}
+
+.photo-date {
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.empty {
+    color: #6b7280;
+    margin: 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.danger {
+    border-color: #ef4444;
+    color: #dc2626;
+    background: #fff;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.modal:target {
+    display: grid;
+    place-items: center;
+}
+
+.modal-box {
+    width: min(760px, 100%);
+    max-height: 90vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.modal-box img {
+    width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    background: #111827;
+}
+
+.modal-form {
+    display: grid;
+    gap: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}

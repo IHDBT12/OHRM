@@ -1,0 +1,25 @@
+<%@ page pageEncoding="UTF-8" %>
+<aside class="sidebar">
+    <div class="brand">
+        <div>
+            <div class="brand-title">오케스트라 <br>회원 관리 시스템</div>
+            <div class="brand-subtitle">Orchestra Member System</div>
+        </div>
+    </div>
+
+    <nav class="nav-list">
+        <a class="nav-item <%= "home".equals(activeMenu) ? "active" : "" %>" href="index.jsp">
+            <i class="bi bi-house-door"></i>홈
+        </a>
+        <a class="nav-item" href="#"><i class="bi bi-people"></i>인원 소개</a>
+        <a class="nav-item" href="#"><i class="bi bi-calendar3"></i>캘린더</a>
+        <a class="nav-item" href="#"><i class="bi bi-music-note-beamed"></i>연습 기록</a>
+        <a class="nav-item" href="#"><i class="bi bi-calendar-check"></i>출결</a>
+        <a class="nav-item <%= "photo".equals(activeMenu) ? "active" : "" %>" href="photo_album.jsp">
+            <i class="bi bi-camera"></i>사진첩
+        </a>
+        <a class="nav-item <%= "profile".equals(activeMenu) ? "active" : "" %>" href="profile_view.jsp">
+            <i class="bi bi-person"></i>내 프로필
+        </a>
+    </nav>
+</aside>
