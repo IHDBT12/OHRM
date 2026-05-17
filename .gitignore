@@ -10,6 +10,10 @@ build/
 .project
 
 
-# 4. Server Configuration
+# 3. Server Configuration
 Servers/
 .recommenders/
+
+
+.jar
+.md
