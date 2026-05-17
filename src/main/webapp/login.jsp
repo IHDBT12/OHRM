@@ -24,7 +24,7 @@
             box-shadow: none;
             border-color: #0d6efd;
         }
-    </style>
+    </style> 
 </head>
 <body>
 
