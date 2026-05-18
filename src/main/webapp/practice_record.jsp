@@ -1,5 +1,5 @@
-<!DOCTYPE html>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -26,6 +26,7 @@ body {
     background: #001f3f;
     color: white;
     padding: 24px;
+    flex-shrink: 0;
 }
 
 .logo {
@@ -47,14 +48,15 @@ body {
 
 .main {
     flex: 1;
-    padding: 40px;
+    padding: 32px;
+    max-width: calc(100vw - 220px);
 }
 
 h1 {
     color: #001f3f;
 }
 
-.card {
+.card, .summary-box {
     background: white;
     border: 1px solid #ddd;
     border-radius: 16px;
@@ -64,8 +66,8 @@ h1 {
 
 .form-row {
     display: grid;
-    grid-template-columns: 180px 160px 100px 100px 1fr 120px;
-    gap: 16px;
+    grid-template-columns: 170px 160px 90px 90px 1fr 120px;
+    gap: 14px;
     align-items: end;
 }
 
@@ -92,9 +94,14 @@ button {
     cursor: pointer;
 }
 
+.cancel-btn {
+    background: #6c757d;
+    display: none;
+}
+
 .content-grid {
     display: grid;
-    grid-template-columns: 1fr 260px;
+    grid-template-columns: minmax(0, 1fr) 260px;
     gap: 20px;
 }
 
@@ -109,7 +116,6 @@ button {
     gap: 12px;
     margin-top: 24px;
     overflow-x: auto;
-    align-items: flex-start;
 }
 
 .week-labels {
@@ -118,10 +124,7 @@ button {
     gap: 5px;
     margin-top: 28px;
     font-size: 12px;
-}
-
-.month {
-    margin-right: 14px;
+    flex-shrink: 0;
 }
 
 .months-wrap {
@@ -180,22 +183,84 @@ button {
     gap: 5px;
 }
 
-.summary-box {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 20px;
-}
-
 .summary-box h3 {
     margin-top: 0;
     color: #001f3f;
 }
 
 .summary-number {
-    font-size: 36px;
+    font-size: 34px;
     font-weight: bold;
+}
+
+.record-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.record-table th,
+.record-table td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+.record-table th {
+    background: #f1f3f8;
+}
+
+.record-table td.memo {
+    text-align: left;
+}
+
+.action-btn {
+    padding: 7px 10px;
+    margin: 2px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.edit-btn {
+    background: #1f7aec;
+}
+
+.delete-btn {
+    background: #dc3545;
+}
+
+.empty-record {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+}
+
+@media (max-width: 1100px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .main {
+        max-width: 100vw;
+        padding: 20px;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 </head>
@@ -205,7 +270,7 @@ button {
 <div class="layout">
 
     <aside class="sidebar">
-        <div class="logo">𝄞 오케스트라<br>Member System</div>
+        <div class="logo">오케스트라<br>Member System</div>
 
         <div class="menu">
             <div>홈</div>
@@ -221,7 +286,6 @@ button {
     <main class="main">
 
         <h1>연습 기록</h1>
-        <p>연습 시간을 입력하면 해당 날짜의 잔디가 채워집니다.</p>
 
         <section class="card">
             <h2>연습 기록 입력</h2>
@@ -234,37 +298,16 @@ button {
 
                 <div>
                     <label>악기</label>
-                    <select id="instrumentInput">
-                        <option>바이올린</option>
-                        <option>비올라</option>
-                        <option>첼로</option>
-                        <option>플루트</option>
-                        <option>클라리넷</option>
-                    </select>
+                    <input type="text" id="instrumentInput" placeholder="악기 입력">
                 </div>
 
                 <div>
-                    <label>시간</label>
-                    <select id="hourInput">
-                        <option value="0">0</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label>분</label>
-                    <select id="minuteInput">
-                        <option value="0">0</option>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="30">30</option>
-                        <option value="40">40</option>
-                        <option value="50">50</option>
-                    </select>
+					<label>시간</label>
+					<select id="hourInput"></select>
+				</div>
+				<div>
+					<label>분</label>
+					<select id="minuteInput"></select>
                 </div>
 
                 <div>
@@ -272,7 +315,10 @@ button {
                     <input type="text" id="memoInput" placeholder="메모 입력">
                 </div>
 
-                <button onclick="savePractice()">저장하기</button>
+                <div>
+                    <button id="saveBtn" onclick="savePractice()">저장하기</button>
+                    <button id="cancelBtn" class="cancel-btn" onclick="cancelEdit()">취소</button>
+                </div>
             </div>
         </section>
 
@@ -280,10 +326,8 @@ button {
 
             <section class="card">
                 <div class="heatmap-header">
-                    <h2>연습 현황 2026년</h2>
-                    <strong>0 / ~1h / 1h~3h / 3h~</strong>
+                    <h2 id="heatmapTitle">연습 현황</h2>
                 </div>
-
                 <div class="heatmap-area">
                     <div class="week-labels">
                         <div>월</div>
@@ -321,40 +365,158 @@ button {
 
         </div>
 
+        <section class="card">
+            <h2>최근 연습 기록</h2>
+
+            <table class="record-table">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>악기</th>
+                        <th>연습 시간</th>
+                        <th>메모</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="recordList"></tbody>
+            </table>
+        </section>
+
     </main>
 
 </div>
 
 <script>
-const YEAR = 2026;
+const YEAR = new Date().getFullYear();
+let records = JSON.parse(localStorage.getItem("practiceRecords")) || [];
+let editId = null;
 
-let practiceData = {};
+const today = new Date();
+const todayKey = makeDateKey(today);
 
-document.getElementById("dateInput").value = "2026-05-21";
+document.getElementById("dateInput").value = todayKey;
+document.getElementById("heatmapTitle").textContent = "연습 현황 " + YEAR + "년";
+
+function makeDateKey(date) {
+    return date.getFullYear() + "-" +
+        String(date.getMonth() + 1).padStart(2, "0") + "-" +
+        String(date.getDate()).padStart(2, "0");
+}
+
+function saveToStorage() {
+    localStorage.setItem("practiceRecords", JSON.stringify(records));
+}
 
 function savePractice() {
     const date = document.getElementById("dateInput").value;
+    const instrument = document.getElementById("instrumentInput").value.trim();
     const hour = Number(document.getElementById("hourInput").value);
     const minute = Number(document.getElementById("minuteInput").value);
+    const memo = document.getElementById("memoInput").value.trim();
 
     const totalMinutes = hour * 60 + minute;
+
+    if (!date) {
+        alert("날짜를 입력해주세요.");
+        return;
+    }
+
+    if (!instrument) {
+        alert("악기를 입력해주세요.");
+        return;
+    }
 
     if (totalMinutes === 0) {
         alert("0시간 0분은 기록할 수 없습니다.");
         return;
     }
 
-    practiceData[date] = totalMinutes;
+    if (editId !== null) {
+        const target = records.find(record => record.id === editId);
 
-    renderHeatmap();
-    renderMonthTotal();
-    renderStreak();
+        if (target) {
+            target.date = date;
+            target.instrument = instrument;
+            target.minutes = totalMinutes;
+            target.memo = memo;
+        }
+
+        editId = null;
+        document.getElementById("saveBtn").textContent = "저장하기";
+        document.getElementById("cancelBtn").style.display = "none";
+    } else {
+        records.push({
+            id: Date.now(),
+            date: date,
+            instrument: instrument,
+            minutes: totalMinutes,
+            memo: memo
+        });
+    }
+
+    saveToStorage();
+    resetForm();
+    renderAll();
+}
+
+function resetForm() {
+    document.getElementById("dateInput").value = todayKey;
+    document.getElementById("instrumentInput").value = "";
+    document.getElementById("hourInput").value = "0";
+    document.getElementById("minuteInput").value = "0";
+    document.getElementById("memoInput").value = "";
+}
+
+function cancelEdit() {
+    editId = null;
+    resetForm();
+    document.getElementById("saveBtn").textContent = "저장하기";
+    document.getElementById("cancelBtn").style.display = "none";
+}
+
+function editRecord(id) {
+    const record = records.find(item => item.id === id);
+
+    if (!record) return;
+
+    editId = id;
+
+    document.getElementById("dateInput").value = record.date;
+    document.getElementById("instrumentInput").value = record.instrument;
+    document.getElementById("hourInput").value = String(Math.floor(record.minutes / 60));
+    document.getElementById("minuteInput").value = String(record.minutes % 60);
+    document.getElementById("memoInput").value = record.memo;
+
+    document.getElementById("saveBtn").textContent = "수정하기";
+    document.getElementById("cancelBtn").style.display = "block";
+}
+
+function deleteRecord(id) {
+    if (!confirm("해당 연습 기록을 삭제하시겠습니까?")) return;
+
+    records = records.filter(record => record.id !== id);
+    saveToStorage();
+    renderAll();
+}
+
+function getPracticeDataByDate() {
+    const data = {};
+
+    records.forEach(record => {
+        if (!data[record.date]) {
+            data[record.date] = 0;
+        }
+
+        data[record.date] += record.minutes;
+    });
+
+    return data;
 }
 
 function getLevel(minutes) {
     if (!minutes || minutes === 0) return "level-0";
-    if (minutes <= 60) return "level-1";
-    if (minutes <= 180) return "level-2";
+    if (minutes > 0 && minutes < 60) return "level-1";
+    if (minutes >= 60 && minutes < 180) return "level-2";
     return "level-3";
 }
 
@@ -364,6 +526,7 @@ function getMondayIndex(date) {
 }
 
 function renderHeatmap() {
+    const practiceData = getPracticeDataByDate();
     const heatmap = document.getElementById("heatmap");
     heatmap.innerHTML = "";
 
@@ -373,7 +536,7 @@ function renderHeatmap() {
 
         const title = document.createElement("div");
         title.className = "month-title";
-        title.textContent = '${month + 1}월';
+        title.textContent = (month + 1) + "월";
 
         const grid = document.createElement("div");
         grid.className = "month-grid";
@@ -403,8 +566,7 @@ function renderHeatmap() {
                 cell.classList.add("first-day");
             }
 
-            cell.title = '${dateKey} / ${minutes}분';
-
+            cell.title = dateKey + " / " + formatTime(minutes);
             grid.appendChild(cell);
         }
 
@@ -418,55 +580,127 @@ function formatTime(minutes) {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
 
-    if (h > 0 && m > 0) return '${h}시간 ${m}분';
-    if (h > 0) return '${h}시간';
-    return '${m}분';
+    if (h > 0 && m > 0) return h + "시간 " + m + "분";
+    if (h > 0) return h + "시간";
+    return m + "분";
 }
 
 function renderMonthTotal() {
     const now = new Date();
+
+    const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
     let total = 0;
 
-    Object.keys(practiceData).forEach(date => {
-        const parts = date.split("-");
-        const year = Number(parts[0]);
-        const month = Number(parts[1]);
+    records.forEach(record => {
+        const [recordYear, recordMonth] = record.date.split("-").map(Number);
 
-        if (year === YEAR && month === currentMonth) {
-            total += practiceData[date];
+        if (recordYear === currentYear && recordMonth === currentMonth) {
+            total += record.minutes;
         }
     });
 
     document.getElementById("monthTotal").textContent = formatTime(total);
-    document.getElementById("monthText").textContent = '${YEAR}년 ${currentMonth}월 기준';
+    document.getElementById("monthText").textContent =
+        currentYear + "년 " + currentMonth + "월 기준";
 }
 
 function renderStreak() {
-    let streak = 0;
-    let checkDate = new Date();
+    const practiceData = getPracticeDataByDate();
+
+    const practicedDates = Object.keys(practiceData)
+        .filter(dateKey => practiceData[dateKey] > 0)
+        .sort((a, b) => new Date(b) - new Date(a));
+
+    if (practicedDates.length === 0) {
+        document.getElementById("streakText").textContent = "0일";
+        return;
+    }
+
+    let streak = 1;
+    let checkDate = new Date(practicedDates[0]);
 
     while (true) {
-        const dateKey =
-            checkDate.getFullYear() + "-" +
-            String(checkDate.getMonth() + 1).padStart(2, "0") + "-" +
-            String(checkDate.getDate()).padStart(2, "0");
+        checkDate.setDate(checkDate.getDate() - 1);
 
-        if (practiceData[dateKey] && practiceData[dateKey] > 0) {
+        const prevDateKey = makeDateKey(checkDate);
+
+        if (practiceData[prevDateKey] && practiceData[prevDateKey] > 0) {
             streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
         } else {
             break;
         }
     }
 
-    document.getElementById("streakText").textContent = '${streak}일';
+    document.getElementById("streakText").textContent = streak + "일";
 }
 
-renderHeatmap();
-renderMonthTotal();
-renderStreak();
+function renderRecords() {
+    const recordList = document.getElementById("recordList");
+    recordList.innerHTML = "";
+
+    if (records.length === 0) {
+        recordList.innerHTML =
+            "<tr><td colspan='5' class='empty-record'>최근 연습 기록이 없습니다.</td></tr>";
+        return;
+    }
+
+    const sortedRecords = [...records].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+    });
+
+    sortedRecords.forEach(record => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML =
+            "<td>" + record.date + "</td>" +
+            "<td>" + record.instrument + "</td>" +
+            "<td>" + formatTime(record.minutes) + "</td>" +
+            "<td class='memo'>" + (record.memo || "-") + "</td>" +
+            "<td>" +
+                "<button class='action-btn edit-btn' onclick='editRecord(" + record.id + ")'>수정</button>" +
+                "<button class='action-btn delete-btn' onclick='deleteRecord(" + record.id + ")'>삭제</button>" +
+            "</td>";
+
+        recordList.appendChild(tr);
+    });
+}
+
+function initializeTimeSelect() {
+    const hourSelect = document.getElementById("hourInput");
+    const minuteSelect = document.getElementById("minuteInput");
+
+    hourSelect.innerHTML = "";
+    minuteSelect.innerHTML = "";
+
+    // 0 ~ 8시간
+    for (let h = 0; h <= 8; h++) {
+        const option = document.createElement("option");
+        option.value = h;
+        option.textContent = h;
+        hourSelect.appendChild(option);
+    }
+
+    // 0 ~ 59분
+    for (let m = 0; m <= 59; m++) {
+        const option = document.createElement("option");
+        option.value = m;
+        option.textContent = m;
+        minuteSelect.appendChild(option);
+    }
+}
+
+initializeTimeSelect();
+
+function renderAll() {
+    renderHeatmap();
+    renderMonthTotal();
+    renderStreak();
+    renderRecords();
+}
+
+renderAll();
 </script>
 
 </body>
