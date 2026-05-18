@@ -3,7 +3,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>연습 기록</title>
+<title>연습기록</title>
 
 <style>
 * {

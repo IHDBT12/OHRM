@@ -3,7 +3,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>오케스트라 회원 관리 시스템 - 출결</title>
+<title>오케스트라 회원 관리 시스템-출결</title>
 
 <style>
 * {
