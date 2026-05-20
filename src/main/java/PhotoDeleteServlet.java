@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import ohrm.util.AuthUtils;
 import ohrm.util.UploadPathUtils;
 
 public class PhotoDeleteServlet extends HttpServlet {
@@ -21,6 +22,11 @@ public class PhotoDeleteServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+
+        if (AuthUtils.currentStudentId(request) == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
 
         int photoId;
         try {

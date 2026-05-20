@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import ohrm.util.AuthUtils;
 import ohrm.util.UploadPathUtils;
 
 public class PhotoUploadServlet extends HttpServlet {
@@ -31,6 +32,11 @@ public class PhotoUploadServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+
+        if (AuthUtils.currentStudentId(request) == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
 
         String eventName = value(request, "eventName");
         String eventDate = value(request, "eventDate");
