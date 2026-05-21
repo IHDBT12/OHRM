@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import ohrm.util.AuthUtils;
 import ohrm.util.UploadPathUtils;
 
 public class ProfileUpdateServlet extends HttpServlet {
@@ -22,8 +23,6 @@ public class ProfileUpdateServlet extends HttpServlet {
     private static final String URL = "jdbc:mariadb://localhost:3306/ohrm_db";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "1234";
-    private static final int STUDENT_ID = 20240001;
-
     private static final String BIRTH_DATE_REGEX = "^\\d{4}\\.\\d{2}\\.\\d{2}$";
     private static final String PHONE_REGEX = "^010-\\d{4}-\\d{4}$";
 
@@ -32,24 +31,36 @@ public class ProfileUpdateServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
+        Integer sessionStudentId = AuthUtils.currentStudentId(request);
+        if (sessionStudentId == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        int studentId = sessionStudentId;
         String birthDate = value(request, "birthDate");
         String major = value(request, "major");
         String phone = value(request, "phone");
         String bio = value(request, "bio");
+        String newPassword = value(request, "newPassword");
+        String instrumentAssetId = value(request, "instrumentAssetId");
+        boolean isEnrolled = Boolean.parseBoolean(value(request, "isEnrolled"));
 
-        if (!birthDate.matches(BIRTH_DATE_REGEX)) {
+        if (!birthDate.isEmpty() && !birthDate.matches(BIRTH_DATE_REGEX)) {
             redirect(response, "birth");
             return;
         }
 
-        if (!phone.matches(PHONE_REGEX)) {
+        if (!phone.isEmpty() && !phone.matches(PHONE_REGEX)) {
             redirect(response, "phone");
             return;
         }
 
-        Date parsedBirthDate;
+        Date parsedBirthDate = null;
         try {
-            parsedBirthDate = Date.valueOf(birthDate.replace(".", "-"));
+            if (!birthDate.isEmpty()) {
+                parsedBirthDate = Date.valueOf(birthDate.replace(".", "-"));
+            }
         } catch (IllegalArgumentException e) {
             redirect(response, "birth");
             return;
@@ -58,19 +69,33 @@ public class ProfileUpdateServlet extends HttpServlet {
         try {
             Class.forName("org.mariadb.jdbc.Driver");
 
-            try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "UPDATE members SET birth_date = ?, major = ?, phone = ?, bio = ? WHERE student_id = ?"
-                 )) {
-                pstmt.setDate(1, parsedBirthDate);
-                pstmt.setString(2, major);
-                pstmt.setString(3, phone);
-                pstmt.setString(4, bio);
-                pstmt.setInt(5, STUDENT_ID);
-                pstmt.executeUpdate();
+            try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
+                try (PreparedStatement pstmt = conn.prepareStatement(
+                    "UPDATE members SET birth_date = ?, major = ?, phone = ?, is_enrolled = ?, bio = ? WHERE student_id = ?"
+                )) {
+                    pstmt.setDate(1, parsedBirthDate);
+                    pstmt.setString(2, major);
+                    pstmt.setString(3, phone);
+                    pstmt.setBoolean(4, isEnrolled);
+                    pstmt.setString(5, bio);
+                    pstmt.setInt(6, studentId);
+                    pstmt.executeUpdate();
+                }
+
+                if (!newPassword.isEmpty()) {
+                    try (PreparedStatement pstmt = conn.prepareStatement(
+                        "UPDATE members SET password_hash = ? WHERE student_id = ?"
+                    )) {
+                        pstmt.setString(1, AuthUtils.sha256(newPassword));
+                        pstmt.setInt(2, studentId);
+                        pstmt.executeUpdate();
+                    }
+                }
+
+                updateInstrument(conn, studentId, instrumentAssetId);
             }
 
-            saveProfileImage(request);
+            saveProfileImage(request, studentId);
             response.sendRedirect("profile_view.jsp?updated=1");
         } catch (ClassNotFoundException | SQLException e) {
             throw new ServletException(e);
@@ -86,7 +111,45 @@ public class ProfileUpdateServlet extends HttpServlet {
         response.sendRedirect("profile_modify.jsp?error=" + error);
     }
 
-    private void saveProfileImage(HttpServletRequest request) throws IOException, ServletException {
+    private void updateInstrument(Connection conn, int studentId, String instrumentAssetId) throws SQLException {
+        if (instrumentAssetId.isEmpty()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                "UPDATE members SET instrument_asset_id = NULL WHERE student_id = ?"
+            )) {
+                pstmt.setInt(1, studentId);
+                pstmt.executeUpdate();
+            }
+            return;
+        }
+
+        int assetId;
+        try {
+            assetId = Integer.parseInt(instrumentAssetId);
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(
+            "SELECT 1 FROM club_instruments WHERE asset_id = ?"
+        )) {
+            pstmt.setInt(1, assetId);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return;
+                }
+            }
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(
+            "UPDATE members SET instrument_asset_id = ? WHERE student_id = ?"
+        )) {
+            pstmt.setInt(1, assetId);
+            pstmt.setInt(2, studentId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    private void saveProfileImage(HttpServletRequest request, int studentId) throws IOException, ServletException {
         Part imagePart = request.getPart("profileImage");
         if (imagePart == null || imagePart.getSize() == 0) {
             return;
@@ -106,7 +169,7 @@ public class ProfileUpdateServlet extends HttpServlet {
             uploadDir.mkdirs();
         }
 
-        String fileName = STUDENT_ID + ".png";
+        String fileName = studentId + ".png";
         Path deployedFile = new File(uploadDir, fileName).toPath();
         Files.copy(imagePart.getInputStream(), deployedFile, StandardCopyOption.REPLACE_EXISTING);
         copyToSourceMemberFolder(deployedFile, fileName);

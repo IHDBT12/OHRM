@@ -5,6 +5,7 @@
 <%@ page import="java.sql.ResultSet" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="java.io.File" %>
+<%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
 <%
     request.setCharacterEncoding("UTF-8");
@@ -12,24 +13,31 @@
     String url = "jdbc:mariadb://localhost:3306/ohrm_db";
     String dbUser = "root";
     String dbPassword = "1234";
-    int studentId = 20240001;
+    Integer sessionStudentId = AuthUtils.currentStudentId(request);
+    if (sessionStudentId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    int studentId = sessionStudentId;
     String activeMenu = "profile";
 
     String name = "";
-    String instrument = "";
     String major = "";
     String phone = "";
     String enrolledText = "";
     String email = "";
     String birthDate = "";
     String joinedAt = "";
-    String passwordHash = "";
     String bio = "";
+    String instrumentAssetId = "";
     String memberImageUrl = "";
     String instrumentImageUrl = "";
     String errorMessage = "";
 
-    String[] instrumentInfo = new String[3];
+    String[] instrumentInfo = new String[] {
+        "", "", ""
+    };
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
@@ -42,13 +50,12 @@
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         name = text(rs, "name");
-                        instrument = text(rs, "instrument");
                         major = text(rs, "major");
                         phone = text(rs, "phone");
-                        enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학/졸업";
+                        enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
-                        passwordHash = text(rs, "password_hash");
                         bio = text(rs, "bio");
+                        instrumentAssetId = text(rs, "instrument_asset_id");
                         birthDate = dateText(rs, "birth_date");
                         joinedAt = dateText(rs, "joined_at");
                     }
@@ -57,9 +64,9 @@
 
             try (PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT asset_id, instrument_name, owner_type " +
-                "FROM club_instruments WHERE student_id = ? ORDER BY asset_id LIMIT 1"
+                "FROM club_instruments WHERE asset_id = ?"
             )) {
-                pstmt.setInt(1, studentId);
+                pstmt.setInt(1, instrumentAssetId.isEmpty() ? 0 : Integer.parseInt(instrumentAssetId));
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         instrumentInfo = new String[] {
@@ -79,17 +86,16 @@
 
     if (name.isEmpty()) {
         name = "";
-        instrument = "";
         major = "";
         phone = "";
         enrolledText = "";
         email = "";
         birthDate = "";
         joinedAt = "";
-        passwordHash = "";
         bio = "";
+        instrumentAssetId = "";
         instrumentInfo = new String[] {
-            " ", " ", " "
+            "", "", ""
         };
     }
 
@@ -170,10 +176,6 @@
                             <div class="control"><%= html(phone) %></div>
                         </div>
                         <div class="field">
-                            <label>악기</label>
-                            <div class="control"><%= html(instrument) %></div>
-                        </div>
-                        <div class="field">
                             <label>재학 여부</label>
                             <div class="control"><%= html(enrolledText) %></div>
                         </div>
@@ -194,7 +196,7 @@
                     </div>
                     <div class="account-row">
                         <span>비밀번호</span>
-                        <span><%= html(passwordHash) %></span>
+                        <span>****</span>
                         <span></span>
                     </div>
                     <div class="account-row">
@@ -214,8 +216,8 @@
                     <div class="instrument-layout">
                         <img class="instrument-image" src="<%= html(instrumentImageUrl) %>" alt="악기 사진">
                         <div>
-                            <div class="info-row"><span>악기명</span><strong><%= html(instrumentInfo[1]) %></strong></div>
                             <div class="info-row"><span>관리번호</span><strong><%= html(instrumentInfo[0]) %></strong></div>
+                            <div class="info-row"><span>악기명</span><strong><%= html(instrumentInfo[1]) %></strong></div>
                             <div class="info-row"><span>소유자</span><strong><%= html(instrumentInfo[2]) %></strong></div>
                         </div>
                     </div>

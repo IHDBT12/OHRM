@@ -7,6 +7,7 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.io.File" %>
+<%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
 <%
     request.setCharacterEncoding("UTF-8");
@@ -14,7 +15,13 @@
     String url = "jdbc:mariadb://localhost:3306/ohrm_db";
     String dbUser = "root";
     String dbPassword = "1234";
-    int studentId = 20240001;
+    Integer sessionStudentId = AuthUtils.currentStudentId(request);
+    if (sessionStudentId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    int studentId = sessionStudentId;
     String activeMenu = "photo";
 
     String selectedYear = request.getParameter("year");
@@ -23,7 +30,6 @@
     }
 
     String name = "";
-    String instrument = "";
     String memberImageUrl = "";
     String errorMessage = "";
     List<String> years = new ArrayList<>();
@@ -34,13 +40,12 @@
 
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
             try (PreparedStatement pstmt = conn.prepareStatement(
-                "SELECT name, instrument FROM members WHERE student_id = ?"
+                "SELECT name FROM members WHERE student_id = ?"
             )) {
                 pstmt.setInt(1, studentId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         name = text(rs, "name");
-                        instrument = text(rs, "instrument");
                     }
                 }
             }

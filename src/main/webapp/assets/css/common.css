@@ -82,6 +82,18 @@ body {
     font-weight: 700;
 }
 
+.user-chip form {
+    margin: 0;
+}
+
+.logout-btn {
+    border: 0;
+    background: transparent;
+    color: #4b5563;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 .mini-avatar {
     width: 40px;
     height: 40px;

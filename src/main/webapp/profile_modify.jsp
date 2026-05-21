@@ -5,6 +5,9 @@
 <%@ page import="java.sql.ResultSet" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="java.io.File" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.List" %>
+<%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
 <%
     request.setCharacterEncoding("UTF-8");
@@ -12,25 +15,33 @@
     String url = "jdbc:mariadb://localhost:3306/ohrm_db";
     String dbUser = "root";
     String dbPassword = "1234";
-    int studentId = 20240001;
+    Integer sessionStudentId = AuthUtils.currentStudentId(request);
+    if (sessionStudentId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    int studentId = sessionStudentId;
     String activeMenu = "profile";
 
     String name = "";
-    String instrument = "";
     String major = "";
     String phone = "";
     String enrolledText = "";
     String email = "";
     String birthDate = "";
     String joinedAt = "";
-    String passwordHash = "";
     String bio = "";
+    String instrumentAssetId = "";
     String memberImageUrl = "";
     String instrumentImageUrl = "";
     String errorMessage = "";
     String saveMessage = "";
 
-    String[] instrumentInfo = new String[3];
+    String[] instrumentInfo = new String[] {
+        "", "", ""
+    };
+    List<String[]> instrumentOptions = new ArrayList<>();
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
@@ -43,13 +54,12 @@
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         name = text(rs, "name");
-                        instrument = text(rs, "instrument");
                         major = text(rs, "major");
                         phone = text(rs, "phone");
-                        enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학/졸업";
+                        enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
-                        passwordHash = text(rs, "password_hash");
                         bio = text(rs, "bio");
+                        instrumentAssetId = text(rs, "instrument_asset_id");
                         birthDate = dateText(rs, "birth_date");
                         joinedAt = dateText(rs, "joined_at");
                     }
@@ -58,9 +68,9 @@
 
             try (PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT asset_id, instrument_name, owner_type " +
-                "FROM club_instruments WHERE student_id = ? ORDER BY asset_id LIMIT 1"
+                "FROM club_instruments WHERE asset_id = ?"
             )) {
-                pstmt.setInt(1, studentId);
+                pstmt.setInt(1, instrumentAssetId.isEmpty() ? 0 : Integer.parseInt(instrumentAssetId));
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         instrumentInfo = new String[] {
@@ -69,6 +79,19 @@
                             text(rs, "owner_type")
                         };
                     }
+                }
+            }
+
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT asset_id, instrument_name, owner_type FROM club_instruments ORDER BY asset_id"
+            );
+                ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    instrumentOptions.add(new String[] {
+                        String.valueOf(rs.getInt("asset_id")),
+                        text(rs, "instrument_name"),
+                        text(rs, "owner_type")
+                    });
                 }
             }
         }
@@ -80,17 +103,16 @@
 
     if (name.isEmpty()) {
         name = "";
-        instrument = "";
         major = "";
         phone = "";
         enrolledText = "";
         email = "";
         birthDate = "";
         joinedAt = "";
-        passwordHash = "";
         bio = "";
+        instrumentAssetId = "";
         instrumentInfo = new String[] {
-            " ", " ", " "
+            "", "", ""
         };
     }
 
@@ -99,6 +121,8 @@
         saveMessage = "생년월일은 yyyy.MM.dd 형식으로 입력해주세요. 예: 2003.05.20";
     } else if ("phone".equals(formError)) {
         saveMessage = "전화번호는 010-1234-5678 형식으로 입력해주세요.";
+    } else if ("name".equals(formError)) {
+        saveMessage = "이름은 필수 입력입니다.";
     }
 
     String memberDefaultImage = "assets/img/member/member.png";
@@ -146,7 +170,7 @@
                 <div class="page-head">
                     <div>
                         <h1>내 프로필 수정</h1>
-                        <p>사진, 생년월일, 학과, 전화번호, 소개를 수정할 수 있습니다.</p>
+                        <p>사진, 기본 정보, 소개를 수정할 수 있습니다.</p>
                         <div class="accent-line"></div>
                     </div>
                     <button class="btn primary" type="submit">저장</button>
@@ -169,30 +193,29 @@
                     <h2 class="card-title">기본 정보</h2>
                     <div class="form-grid">
                         <div class="field">
-                            <label>이름 (변경 불가)</label>
+                            <label>이름</label>
                             <div class="control readonly-control"><%= html(name) %></div>
                         </div>
                         <div class="field">
                             <label>생년월일</label>
                             <input class="control" type="text" name="birthDate" value="<%= html(birthDate) %>"
-                                   pattern="\d{4}\.\d{2}\.\d{2}" placeholder="2003.05.20" required>
+                                   pattern="\d{4}\.\d{2}\.\d{2}" placeholder="2003.05.20">
                         </div>
                         <div class="field">
                             <label>학과</label>
-                            <input class="control" type="text" name="major" value="<%= html(major) %>" maxlength="30" required>
+                            <input class="control" type="text" name="major" value="<%= html(major) %>" maxlength="30">
                         </div>
                         <div class="field">
                             <label>전화번호</label>
                             <input class="control" type="text" name="phone" value="<%= html(phone) %>"
-                                   pattern="010-\d{4}-\d{4}" placeholder="010-1234-5678" required>
-                        </div>
-                        <div class="field">
-                            <label>악기</label>
-                            <div class="control readonly-control"><%= html(instrument) %></div>
+                                   pattern="010-\d{4}-\d{4}" placeholder="010-1234-5678">
                         </div>
                         <div class="field">
                             <label>재학 여부</label>
-                            <div class="control readonly-control"><%= html(enrolledText) %></div>
+                            <select class="control" name="isEnrolled">
+                                <option value="true" <%= "재학".equals(enrolledText) ? "selected" : "" %>>재학</option>
+                                <option value="false" <%= "휴학".equals(enrolledText) ? "selected" : "" %>>휴학</option>
+                            </select>
                         </div>
                     </div>
                 </section>
@@ -211,7 +234,8 @@
                     </div>
                     <div class="account-row">
                         <span>비밀번호</span>
-                        <span><%= html(passwordHash) %></span>
+                        <input class="control" type="password" name="newPassword"
+                               placeholder="****" autocomplete="new-password">
                     </div>
                     <div class="account-row">
                         <span>이메일</span>
@@ -229,12 +253,31 @@
                 <section class="card card-pad instrument-card">
                     <h2 class="card-title">악기</h2>
                     <div class="instrument-layout">
-                        <img class="instrument-image" src="<%= html(instrumentImageUrl) %>" alt="악기 사진">
+                        <img id="instrumentImage" class="instrument-image" src="<%= html(instrumentImageUrl) %>" alt="악기 사진">
                         <div>
-                            <div class="info-row"><span>악기명</span><strong><%= html(instrumentInfo[1]) %></strong></div>
-                            <div class="info-row"><span>관리번호</span><strong><%= html(instrumentInfo[0]) %></strong></div>
-                            <div class="info-row"><span>소유자</span><strong><%= html(instrumentInfo[2]) %></strong></div>
-                            <button class="btn" type="button" style="width: 100%; margin-top: 16px;">악기 정보 수정</button>
+                            <div class="info-row">
+                                <span>관리번호</span>
+                                <select class="control" id="instrumentAssetId" name="instrumentAssetId">
+                                    <option value="" data-name="" data-owner="" data-image="<%= html(instrumentDefaultImage) %>">선택 안 함</option>
+                                    <% for (String[] option : instrumentOptions) {
+                                        String optionImage = "assets/img/instrument/" + option[0].trim() + ".png";
+                                        String optionPath = application.getRealPath(optionImage);
+                                        if (optionPath == null || !new File(optionPath).exists()) {
+                                            optionImage = instrumentDefaultImage;
+                                        }
+                                    %>
+                                        <option value="<%= html(option[0]) %>"
+                                                data-name="<%= html(option[1]) %>"
+                                                data-owner="<%= html(option[2]) %>"
+                                                data-image="<%= html(optionImage) %>"
+                                                <%= option[0].equals(instrumentInfo[0]) ? "selected" : "" %>>
+                                            <%= html(option[0]) %>
+                                        </option>
+                                    <% } %>
+                                </select>
+                            </div>
+                            <div class="info-row"><span>악기명</span><strong id="instrumentName"><%= html(instrumentInfo[1]) %></strong></div>
+                            <div class="info-row"><span>소유자</span><strong id="instrumentOwner"><%= html(instrumentInfo[2]) %></strong></div>
                         </div>
                     </div>
                 </section>
@@ -244,6 +287,19 @@
         </section>
     </main>
 </div>
+<script>
+    const instrumentSelect = document.getElementById('instrumentAssetId');
+    const instrumentImage = document.getElementById('instrumentImage');
+    const instrumentName = document.getElementById('instrumentName');
+    const instrumentOwner = document.getElementById('instrumentOwner');
+
+    instrumentSelect.addEventListener('change', () => {
+        const selected = instrumentSelect.options[instrumentSelect.selectedIndex];
+        instrumentName.textContent = selected.dataset.name || '';
+        instrumentOwner.textContent = selected.dataset.owner || '';
+        instrumentImage.src = selected.dataset.image;
+    });
+</script>
 </body>
 </html>
 
