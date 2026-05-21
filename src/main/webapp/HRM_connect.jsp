@@ -5,13 +5,33 @@
 <%@ page import="java.sql.ResultSet" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
+<%@ page import="java.io.File" %>
+<%@ page import="ohrm.util.AuthUtils" %>
+
 <%
+
     request.setCharacterEncoding("UTF-8");
 
     String url = "jdbc:mariadb://localhost:3306/ohrm_db";
     String dbUser = "root";
     String dbPassword = "1234";
     String activeMenu = "members"; // 현재 활성화된 메뉴 설정
+    
+    Integer sessionStudentId = AuthUtils.currentStudentId(request);
+    if (sessionStudentId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    int studentId = sessionStudentId;
+
+    String name = "";
+    String memberDefaultImage = "assets/img/member/member.png";
+    String memberCandidateImage = "assets/img/member/" + studentId + ".png";
+    String memberCandidatePath = application.getRealPath(memberCandidateImage);
+    String memberImageUrl = memberCandidatePath != null && new File(memberCandidatePath).exists()
+        ? memberCandidateImage
+        : memberDefaultImage;
 
     String errorMessage = "";
 %>
@@ -99,7 +119,7 @@
                                                 pstmtMember.setString(1, instrument);
                                                 try (ResultSet rsMember = pstmtMember.executeQuery()) {
                                                     while (rsMember.next()) {
-                                                        String name = text(rsMember, "name");
+                                                        name = text(rsMember, "name");
                                                         String major = text(rsMember, "major");
                                         %>
                                                         <div class="member-item">
