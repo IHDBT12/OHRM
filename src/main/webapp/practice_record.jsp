@@ -1,8 +1,48 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
+<%@ page import="java.io.File" %>
+<%@ page import="ohrm.util.AuthUtils" %>
+<%@ page import="static ohrm.util.JspUtils.*" %>
+<%
+    request.setCharacterEncoding("UTF-8");
+
+    Integer sessionStudentId = AuthUtils.currentStudentId(request);
+    if (sessionStudentId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    int studentId = sessionStudentId;
+    String activeMenu = "practice";
+    String name = "";
+    String memberDefaultImage = "assets/img/member/member.png";
+    String memberCandidateImage = "assets/img/member/" + studentId + ".png";
+    String memberCandidatePath = application.getRealPath(memberCandidateImage);
+    String memberImageUrl = memberCandidatePath != null && new File(memberCandidatePath).exists()
+        ? memberCandidateImage
+        : memberDefaultImage;
+
+    try {
+        Class.forName("org.mariadb.jdbc.Driver");
+        try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:3306/ohrm_db", "root", "1234");
+             PreparedStatement pstmt = conn.prepareStatement("SELECT name FROM members WHERE student_id = ?")) {
+            pstmt.setInt(1, studentId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    name = text(rs, "name");
+                }
+            }
+        }
+    } catch (Exception e) {
+        name = "";
+    }
+%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="assets/css/common.css">
 <title>연습기록</title>
 
 <style>
@@ -262,10 +302,35 @@ button {
         grid-template-columns: 1fr;
     }
 }
+
+.app-shell > .sidebar {
+    width: auto;
+    padding: 24px 18px;
+}
+
+.app-shell .main {
+    padding: 0;
+    max-width: none;
+}
+
+.content > .layout > .sidebar {
+    display: none;
+}
+
+.content > .layout {
+    display: block;
+    min-height: auto;
+}
 </style>
 </head>
 
 <body>
+
+<div class="app-shell">
+    <%@ include file="/WEB-INF/fragments/sidebar.jspf" %>
+    <main class="main">
+        <%@ include file="/WEB-INF/fragments/topbar.jspf" %>
+        <section class="content">
 
 <div class="layout">
 
@@ -384,6 +449,10 @@ button {
 
     </main>
 
+</div>
+
+        </section>
+    </main>
 </div>
 
 <script>

@@ -1,12 +1,51 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ page import="java.sql.*, java.util.*" %>
+<%@ page import="java.io.File" %>
+<%@ page import="ohrm.util.AuthUtils" %>
+<%@ page import="static ohrm.util.JspUtils.*" %>
+<%
+  request.setCharacterEncoding("UTF-8");
+
+  Integer sessionStudentId = AuthUtils.currentStudentId(request);
+  if (sessionStudentId == null) {
+    response.sendRedirect("login.jsp");
+    return;
+  }
+
+  int studentId = sessionStudentId;
+  String activeMenu = "calendar";
+  String name = "";
+  String memberDefaultImage = "assets/img/member/member.png";
+  String memberCandidateImage = "assets/img/member/" + studentId + ".png";
+  String memberCandidatePath = application.getRealPath(memberCandidateImage);
+  String memberImageUrl = memberCandidatePath != null && new File(memberCandidatePath).exists()
+      ? memberCandidateImage
+      : memberDefaultImage;
+
+  try {
+    Class.forName("org.mariadb.jdbc.Driver");
+    try (Connection profileConn = DriverManager.getConnection("jdbc:mariadb://localhost:3306/ohrm_db", "root", "1234");
+         PreparedStatement profilePs = profileConn.prepareStatement("SELECT name FROM members WHERE student_id = ?")) {
+      profilePs.setInt(1, studentId);
+      try (ResultSet profileRs = profilePs.executeQuery()) {
+        if (profileRs.next()) {
+          name = text(profileRs, "name");
+        }
+      }
+    }
+  } catch (Exception e) {
+    name = "";
+  }
+%>
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/common.css">
   <title>캘린더</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial, sans-serif; }
     .controls { margin-bottom: 10px; }
     .controls a { margin-right: 10px; text-decoration: none; color: #007acc; }
     table.calendar { border-collapse: collapse; width: 100%; }
@@ -23,6 +62,11 @@
   </style>
 </head>
 <body>
+<div class="app-shell">
+  <%@ include file="/WEB-INF/fragments/sidebar.jspf" %>
+  <main class="main">
+    <%@ include file="/WEB-INF/fragments/topbar.jspf" %>
+    <section class="content">
   <h2>캘린더</h2>
 
   <%
@@ -180,5 +224,8 @@
       });
     });
   </script>
+    </section>
+  </main>
+</div>
 </body>
 </html>

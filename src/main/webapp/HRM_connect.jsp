@@ -34,6 +34,21 @@
         : memberDefaultImage;
 
     String errorMessage = "";
+
+    try {
+        Class.forName("org.mariadb.jdbc.Driver");
+        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword);
+             PreparedStatement pstmt = conn.prepareStatement("SELECT name FROM members WHERE student_id = ?")) {
+            pstmt.setInt(1, studentId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    name = text(rs, "name");
+                }
+            }
+        }
+    } catch (Exception e) {
+        errorMessage = "DB 조회 중 오류가 발생했습니다: " + e.getMessage();
+    }
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -97,13 +112,18 @@
                         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
                             
                             // 1. 악기별 인원 수 조회
-                            String groupSql = "SELECT instrument, COUNT(*) AS cnt FROM members GROUP BY instrument ORDER BY instrument ASC";
+                            String groupSql =
+                                "SELECT COALESCE(ci.instrument_name, '악기 미선택') AS instrument_name, COUNT(*) AS cnt " +
+                                "FROM members m " +
+                                "LEFT JOIN club_instruments ci ON m.instrument_asset_id = ci.asset_id " +
+                                "GROUP BY ci.instrument_name " +
+                                "ORDER BY ci.instrument_name ASC";
                             
                             try (PreparedStatement pthreadGroup = conn.prepareStatement(groupSql);
                                  ResultSet rsGroup = pthreadGroup.executeQuery()) {
 
                                 while (rsGroup.next()) {
-                                    String instrument = text(rsGroup, "instrument");
+                                    String instrument = text(rsGroup, "instrument_name");
                                     int count = rsGroup.getInt("cnt");
                 %>
                                     <section class="card card-pad instrument-group">
@@ -114,7 +134,12 @@
                                         <div class="member-list">
                                         <%
                                             // 2. 해당 악기의 멤버 상세 조회 (SQL Injection 방지를 위해 PreparedStatement 사용)
-                                            String memberSql = "SELECT name, major FROM members WHERE instrument = ? ORDER BY name ASC";
+                                            String memberSql =
+                                                "SELECT m.name, m.major " +
+                                                "FROM members m " +
+                                                "LEFT JOIN club_instruments ci ON m.instrument_asset_id = ci.asset_id " +
+                                                "WHERE COALESCE(ci.instrument_name, '악기 미선택') = ? " +
+                                                "ORDER BY m.name ASC";
                                             try (PreparedStatement pstmtMember = conn.prepareStatement(memberSql)) {
                                                 pstmtMember.setString(1, instrument);
                                                 try (ResultSet rsMember = pstmtMember.executeQuery()) {

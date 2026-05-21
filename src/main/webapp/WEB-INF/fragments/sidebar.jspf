@@ -2,7 +2,7 @@
 <aside class="sidebar">
     <div class="brand">
         <div>
-            <div class="brand-title">오케스트라 <br>회원 관리 시스템</div>
+            <div class="brand-title">오케스트라<br>회원 관리 시스템</div>
             <div class="brand-subtitle">Orchestra Member System</div>
         </div>
     </div>
@@ -11,10 +11,18 @@
         <a class="nav-item <%= "home".equals(activeMenu) ? "active" : "" %>" href="index.jsp">
             <i class="bi bi-house-door"></i>홈
         </a>
-        <a class="nav-item" href="#"><i class="bi bi-people"></i>인원 소개</a>
-        <a class="nav-item" href="#"><i class="bi bi-calendar3"></i>캘린더</a>
-        <a class="nav-item" href="#"><i class="bi bi-music-note-beamed"></i>연습 기록</a>
-        <a class="nav-item" href="#"><i class="bi bi-calendar-check"></i>출결</a>
+        <a class="nav-item <%= "members".equals(activeMenu) ? "active" : "" %>" href="HRM_connect.jsp">
+            <i class="bi bi-people"></i>인원 소개
+        </a>
+        <a class="nav-item <%= "calendar".equals(activeMenu) ? "active" : "" %>" href="Calendar_page.jsp">
+            <i class="bi bi-calendar3"></i>캘린더
+        </a>
+        <a class="nav-item <%= "practice".equals(activeMenu) ? "active" : "" %>" href="practice_record.jsp">
+            <i class="bi bi-music-note-beamed"></i>연습 기록
+        </a>
+        <a class="nav-item <%= "attendance".equals(activeMenu) ? "active" : "" %>" href="attendance.jsp">
+            <i class="bi bi-calendar-check"></i>출결
+        </a>
         <a class="nav-item <%= "photo".equals(activeMenu) ? "active" : "" %>" href="photo_album.jsp">
             <i class="bi bi-camera"></i>사진첩
         </a>
