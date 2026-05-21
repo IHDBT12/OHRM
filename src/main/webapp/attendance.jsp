@@ -553,6 +553,5 @@ function hideEdit(id) {
     document.getElementById("edit-row-" + id).style.display = "none";
 }
 </script>
-
 </body>
 </html>
