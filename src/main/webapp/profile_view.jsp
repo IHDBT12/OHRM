@@ -107,7 +107,7 @@
         : memberDefaultImage;
 
     String instrumentDefaultImage = "assets/img/instrument/instrument.png";
-    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[0].trim() + ".png";
+    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[1].trim() + ".png";
     String instrumentCandidatePath = application.getRealPath(instrumentCandidateImage);
     instrumentImageUrl = instrumentInfo[0].trim().isEmpty()
         || instrumentCandidatePath == null

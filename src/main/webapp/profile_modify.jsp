@@ -133,7 +133,7 @@
         : memberDefaultImage;
 
     String instrumentDefaultImage = "assets/img/instrument/instrument.png";
-    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[0].trim() + ".png";
+    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[1].trim() + ".png";
     String instrumentCandidatePath = application.getRealPath(instrumentCandidateImage);
     instrumentImageUrl = instrumentInfo[0].trim().isEmpty()
         || instrumentCandidatePath == null
@@ -260,7 +260,7 @@
                                 <select class="control" id="instrumentAssetId" name="instrumentAssetId">
                                     <option value="" data-name="" data-owner="" data-image="<%= html(instrumentDefaultImage) %>">선택 안 함</option>
                                     <% for (String[] option : instrumentOptions) {
-                                        String optionImage = "assets/img/instrument/" + option[0].trim() + ".png";
+                                        String optionImage = "assets/img/instrument/" + option[1].trim() + ".png";
                                         String optionPath = application.getRealPath(optionImage);
                                         if (optionPath == null || !new File(optionPath).exists()) {
                                             optionImage = instrumentDefaultImage;
