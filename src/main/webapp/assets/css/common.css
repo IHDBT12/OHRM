@@ -82,6 +82,21 @@ body {
     font-weight: 700;
 }
 
+.user-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.user-link:visited,
+.user-link:hover,
+.user-link:active {
+    color: inherit;
+    text-decoration: none;
+}
+
 .user-chip form {
     margin: 0;
 }

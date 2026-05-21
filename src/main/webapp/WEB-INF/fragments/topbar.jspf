@@ -1,8 +1,10 @@
 <%@ page pageEncoding="UTF-8" %>
 <header class="topbar">
     <div class="user-chip">
-        <div class="mini-avatar"><img src="<%= html(memberImageUrl) %>" alt=""></div>
-        <span><%= html(name) %></span>
+        <a class="user-link" href="profile_view.jsp">
+            <div class="mini-avatar"><img src="<%= html(memberImageUrl) %>" alt=""></div>
+            <span><%= html(name) %></span>
+        </a>
         <form action="logout" method="post">
             <button class="logout-btn" type="submit">로그아웃</button>
         </form>
