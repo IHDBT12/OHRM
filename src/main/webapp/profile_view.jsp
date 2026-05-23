@@ -210,18 +210,6 @@
                         <span></span>
                     </div>
                 </section>
-
-                <section class="card card-pad instrument-card">
-                    <h2 class="card-title">악기</h2>
-                    <div class="instrument-layout">
-                        <img class="instrument-image" src="<%= html(instrumentImageUrl) %>" alt="악기 사진">
-                        <div>
-                            <div class="info-row"><span>관리번호</span><strong><%= html(instrumentInfo[0]) %></strong></div>
-                            <div class="info-row"><span>악기명</span><strong><%= html(instrumentInfo[1]) %></strong></div>
-                            <div class="info-row"><span>소유자</span><strong><%= html(instrumentInfo[2]) %></strong></div>
-                        </div>
-                    </div>
-                </section>
             </div>
         </section>
     </main>

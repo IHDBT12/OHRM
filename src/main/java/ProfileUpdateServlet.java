@@ -92,7 +92,9 @@ public class ProfileUpdateServlet extends HttpServlet {
                     }
                 }
 
-                updateInstrument(conn, studentId, instrumentAssetId);
+                if (request.getParameter("instrumentAssetId") != null) {
+                    updateInstrument(conn, studentId, instrumentAssetId);
+                }
             }
 
             saveProfileImage(request, studentId);

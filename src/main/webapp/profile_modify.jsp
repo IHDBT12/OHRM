@@ -249,57 +249,11 @@
                     </div>
                     <button class="btn danger" type="button" style="width: 100%; margin-top: 18px;">회원 탈퇴</button>
                 </section>
-
-                <section class="card card-pad instrument-card">
-                    <h2 class="card-title">악기</h2>
-                    <div class="instrument-layout">
-                        <img id="instrumentImage" class="instrument-image" src="<%= html(instrumentImageUrl) %>" alt="악기 사진">
-                        <div>
-                            <div class="info-row">
-                                <span>관리번호</span>
-                                <select class="control" id="instrumentAssetId" name="instrumentAssetId">
-                                    <option value="" data-name="" data-owner="" data-image="<%= html(instrumentDefaultImage) %>">선택 안 함</option>
-                                    <% for (String[] option : instrumentOptions) {
-                                        String optionImage = "assets/img/instrument/" + option[1].trim() + ".png";
-                                        String optionPath = application.getRealPath(optionImage);
-                                        if (optionPath == null || !new File(optionPath).exists()) {
-                                            optionImage = instrumentDefaultImage;
-                                        }
-                                    %>
-                                        <option value="<%= html(option[0]) %>"
-                                                data-name="<%= html(option[1]) %>"
-                                                data-owner="<%= html(option[2]) %>"
-                                                data-image="<%= html(optionImage) %>"
-                                                <%= option[0].equals(instrumentInfo[0]) ? "selected" : "" %>>
-                                            <%= html(option[0]) %>
-                                        </option>
-                                    <% } %>
-                                </select>
-                            </div>
-                            <div class="info-row"><span>악기명</span><strong id="instrumentName"><%= html(instrumentInfo[1]) %></strong></div>
-                            <div class="info-row"><span>소유자</span><strong id="instrumentOwner"><%= html(instrumentInfo[2]) %></strong></div>
-                        </div>
-                    </div>
-                </section>
-
             </div>
             </form>
         </section>
     </main>
 </div>
-<script>
-    const instrumentSelect = document.getElementById('instrumentAssetId');
-    const instrumentImage = document.getElementById('instrumentImage');
-    const instrumentName = document.getElementById('instrumentName');
-    const instrumentOwner = document.getElementById('instrumentOwner');
-
-    instrumentSelect.addEventListener('change', () => {
-        const selected = instrumentSelect.options[instrumentSelect.selectedIndex];
-        instrumentName.textContent = selected.dataset.name || '';
-        instrumentOwner.textContent = selected.dataset.owner || '';
-        instrumentImage.src = selected.dataset.image;
-    });
-</script>
 </body>
 </html>
 
