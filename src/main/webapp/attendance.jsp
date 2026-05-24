@@ -21,6 +21,9 @@
     int currentStudentId = sessionStudentId;
     String activeMenu = "attendance";
 
+    String viewMode = request.getParameter("view");
+    boolean groupView = "group".equals(viewMode);
+
     String name = "";
     String memberDefaultImage = "assets/img/member/member.png";
     String memberCandidateImage = "assets/img/member/" + currentStudentId + ".png";
@@ -150,8 +153,13 @@
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
             String sql = "SELECT attendance_id, student_id, concert_name, attendance_date, attendance_time, attendance_year, is_present, note "
                        + "FROM concert_attendance "
-                       + "WHERE student_id = ? "
-                       + "ORDER BY attendance_date DESC, attendance_time DESC, attendance_id DESC";
+                       + "WHERE student_id = ? ";
+
+            if (groupView) {
+                sql += "ORDER BY concert_name ASC, attendance_date DESC, attendance_time DESC, attendance_id DESC";
+            } else {
+                sql += "ORDER BY attendance_date DESC, attendance_time DESC, attendance_id DESC";
+            }
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setInt(1, currentStudentId);
@@ -419,6 +427,34 @@ td {
     color: white;
 }
 
+.group-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 5px 9px;
+    background: #e58b00;
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.group-btn:hover {
+    background: #c87500;
+}
+
+.normal-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 5px 9px;
+    background: #6b7280;
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
 .edit-form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -471,6 +507,39 @@ td {
         font-size: 12px;
     }
 }
+
+.table-top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+.group-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #e58b00;
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.group-btn:hover {
+    background: #c87500;
+}
+
+.normal-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #6b7280;
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
 </style>
 </head>
 
@@ -548,14 +617,21 @@ td {
                 </section>
 
                 <section class="card table-card">
-                    <table>
+
+    				<div class="table-top">
+        				<% if (groupView) { %>
+            				<a href="attendance.jsp" class="normal-btn">기본보기</a>
+        				<% } else { %>
+            				<a href="attendance.jsp?view=group" class="group-btn">모아보기</a>
+        				<% } %>
+    				</div>
+
+    				<table>
                         <thead>
                             <tr>
-                                <th>학번</th>
-                                <th>연도</th>
                                 <th>날짜</th>
-                                <th>시간</th>
                                 <th>행사명</th>
+                                <th>시간</th>
                                 <th>상태</th>
                                 <th>비고</th>
                                 <th>관리</th>
@@ -565,25 +641,23 @@ td {
                         <tbody>
                         <% if (attendanceList.isEmpty()) { %>
                             <tr>
-                                <td colspan="8">등록된 출석 정보가 없습니다.</td>
+                                <td colspan="6">등록된 출석 정보가 없습니다.</td>
                             </tr>
                         <% } %>
 
                         <% for (String[] item : attendanceList) {
                             String rowId = item[0];
+                            String concertName = item[2];
                             String dateOnly = item[3];
                             String timeOnly = item[4];
-                            String yearOnly = item[5];
                             String status = item[6];
                             String note = item[7];
                         %>
 
                             <tr id="view-row-<%= rowId %>">
-                                <td><%= item[1] %></td>
-                                <td><%= yearOnly %></td>
                                 <td><%= dateOnly %></td>
+                                <td><%= concertName %></td>
                                 <td><%= timeOnly %></td>
-                                <td><%= item[2] %></td>
                                 <td>
                                     <span class="status <%= status.equals("출석") ? "present" : status.equals("지각") ? "late" : "absent" %>">
                                         <%= status %>
@@ -604,19 +678,20 @@ td {
                             </tr>
 
                             <tr id="edit-row-<%= rowId %>" class="row-edit">
-                                <td colspan="8">
+                                <td colspan="6">
                                     <form class="edit-form" method="post" action="attendance.jsp">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="attendance_id" value="<%= rowId %>">
 
+                                        <input class="edit-input" type="date" name="attendance_date" value="<%= dateOnly %>" required>
+
                                         <select class="edit-input" name="concert_name" required>
-                                            <option value="신입생환영회" <%= "신입생환영회".equals(item[2]) ? "selected" : "" %>>신입생환영회</option>
-                                            <option value="창립제" <%= "창립제".equals(item[2]) ? "selected" : "" %>>창립제</option>
-                                            <option value="정기연주회" <%= "정기연주회".equals(item[2]) ? "selected" : "" %>>정기연주회</option>
-                                            <option value="향상연주회" <%= "향상연주회".equals(item[2]) ? "selected" : "" %>>향상연주회</option>
+                                            <option value="신입생환영회" <%= "신입생환영회".equals(concertName) ? "selected" : "" %>>신입생환영회</option>
+                                            <option value="창립제" <%= "창립제".equals(concertName) ? "selected" : "" %>>창립제</option>
+                                            <option value="정기연주회" <%= "정기연주회".equals(concertName) ? "selected" : "" %>>정기연주회</option>
+                                            <option value="향상연주회" <%= "향상연주회".equals(concertName) ? "selected" : "" %>>향상연주회</option>
                                         </select>
 
-                                        <input class="edit-input" type="date" name="attendance_date" value="<%= dateOnly %>" required>
                                         <input class="edit-input" type="time" name="attendance_time" value="<%= timeOnly %>" required>
 
                                         <select class="edit-input" name="is_present">
