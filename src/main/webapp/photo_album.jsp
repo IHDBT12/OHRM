@@ -59,11 +59,15 @@
                 }
             }
 
-            String photoSql = "SELECT photo_id, event_name, event_at, image_url FROM photo_albums";
+            String photoSql =
+                "SELECT pa.photo_id, pa.event_name, pa.event_at, pa.image_url, " +
+                "COALESCE(m.name, '미상') AS uploader_name " +
+                "FROM photo_albums pa " +
+                "LEFT JOIN members m ON pa.uploader_student_id = m.student_id";
             if (!selectedYear.isEmpty()) {
-                photoSql += " WHERE YEAR(event_at) = ?";
+                photoSql += " WHERE YEAR(pa.event_at) = ?";
             }
-            photoSql += " ORDER BY event_at DESC, photo_id DESC";
+            photoSql += " ORDER BY pa.event_at DESC, pa.photo_id DESC";
 
             try (PreparedStatement pstmt = conn.prepareStatement(photoSql)) {
                 if (!selectedYear.isEmpty()) {
@@ -76,7 +80,8 @@
                             String.valueOf(rs.getInt("photo_id")),
                             text(rs, "event_name"),
                             dateText(rs, "event_at"),
-                            text(rs, "image_url")
+                            text(rs, "image_url"),
+                            text(rs, "uploader_name")
                         });
                     }
                 }
@@ -146,6 +151,7 @@
                                 <img src="<%= html(photo[3]) %>" alt="<%= html(photo[1]) %>">
                             </a>
                             <div class="photo-title"><%= html(photo[1]) %></div>
+                            <div class="photo-uploader"> 작성자: <%= html(photo[4]) %></div>
                             <div class="photo-date"><%= html(photo[2]) %></div>
                         </article>
                     <% } %>

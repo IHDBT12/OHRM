@@ -33,7 +33,8 @@ public class PhotoUploadServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
-        if (AuthUtils.currentStudentId(request) == null) {
+        Integer uploaderStudentId = AuthUtils.currentStudentId(request);
+        if (uploaderStudentId == null) {
             response.sendRedirect("login.jsp");
             return;
         }
@@ -51,7 +52,7 @@ public class PhotoUploadServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
 
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
-                int photoId = insertAlbum(conn, eventName, eventDate);
+                int photoId = insertAlbum(conn, eventName, eventDate, uploaderStudentId);
                 String coverImageUrl = "";
 
                 for (Part imagePart : imageParts) {
@@ -71,13 +72,14 @@ public class PhotoUploadServlet extends HttpServlet {
         response.sendRedirect("photo_album.jsp?uploaded=1");
     }
 
-    private int insertAlbum(Connection conn, String eventName, String eventDate) throws Exception {
+    private int insertAlbum(Connection conn, String eventName, String eventDate, int uploaderStudentId) throws Exception {
         try (PreparedStatement pstmt = conn.prepareStatement(
-            "INSERT INTO photo_albums (event_name, event_at, image_url) VALUES (?, ?, '')",
+            "INSERT INTO photo_albums (uploader_student_id, event_name, event_at, image_url) VALUES (?, ?, ?, '')",
             Statement.RETURN_GENERATED_KEYS
         )) {
-            pstmt.setString(1, eventName);
-            pstmt.setTimestamp(2, Timestamp.valueOf(eventDate + " 00:00:00"));
+            pstmt.setInt(1, uploaderStudentId);
+            pstmt.setString(2, eventName);
+            pstmt.setTimestamp(3, Timestamp.valueOf(eventDate + " 00:00:00"));
             pstmt.executeUpdate();
 
             try (ResultSet rs = pstmt.getGeneratedKeys()) {

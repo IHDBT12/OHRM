@@ -35,6 +35,7 @@
     String memberImageUrl = "";
     String title = "";
     String date = "";
+    String uploaderName = "";
     String errorMessage = "";
     List<String> imageUrls = new ArrayList<>();
 
@@ -54,13 +55,18 @@
             }
 
             try (PreparedStatement pstmt = conn.prepareStatement(
-                "SELECT event_name, event_at, image_url FROM photo_albums WHERE photo_id = ?"
+                "SELECT pa.event_name, pa.event_at, pa.image_url, " +
+                "COALESCE(m.name, '미상') AS uploader_name " +
+                "FROM photo_albums pa " +
+                "LEFT JOIN members m ON pa.uploader_student_id = m.student_id " +
+                "WHERE pa.photo_id = ?"
             )) {
                 pstmt.setInt(1, photoId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         title = text(rs, "event_name");
                         date = dateText(rs, "event_at");
+                        uploaderName = text(rs, "uploader_name");
                         String coverImageUrl = text(rs, "image_url");
                         if (!coverImageUrl.isEmpty()) {
                             imageUrls.add(coverImageUrl);
@@ -119,7 +125,7 @@
             <div class="page-head">
                 <div>
                     <h1><%= title.isEmpty() ? "사진을 찾을 수 없습니다" : html(title) %></h1>
-                    <p><%= html(date) %></p>
+                    <p>작성자: <%= html(uploaderName) %> / <%= html(date) %></p> 
                     <div class="accent-line"></div>
                 </div>
                 <div class="page-actions">

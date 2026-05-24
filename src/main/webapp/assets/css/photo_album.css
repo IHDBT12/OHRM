@@ -12,7 +12,7 @@
 
 .photo-card {
     display: grid;
-    gap: 10px;
+    gap: 6px;
 }
 
 .photo-card img {
@@ -33,9 +33,11 @@
 
 .photo-title {
     font-weight: 800;
+    margin-top: 4px;
 }
 
-.photo-date {
+.photo-date,
+.photo-uploader {
     color: #4b5563;
     font-size: 14px;
 }
