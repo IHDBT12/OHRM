@@ -17,8 +17,10 @@
     String url = "jdbc:mariadb://localhost:3306/ohrm_db";
     String dbUser = "root";
     String dbPassword = "1234";
+
     int currentStudentId = sessionStudentId;
     String activeMenu = "attendance";
+
     String name = "";
     String memberDefaultImage = "assets/img/member/member.png";
     String memberCandidateImage = "assets/img/member/" + currentStudentId + ".png";
@@ -32,9 +34,12 @@
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
+
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword);
              PreparedStatement pstmt = conn.prepareStatement("SELECT name FROM members WHERE student_id = ?")) {
+
             pstmt.setInt(1, currentStudentId);
+
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     name = text(rs, "name");
@@ -58,7 +63,6 @@
             try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
 
                 if ("insert".equals(action)) {
-                    String studentId = request.getParameter("student_id");
                     String concertName = request.getParameter("concert_name");
                     String attendanceDate = request.getParameter("attendance_date");
                     String status = request.getParameter("is_present");
@@ -69,7 +73,7 @@
                                + "VALUES (?, ?, ?, ?, ?)";
 
                     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                        pstmt.setInt(1, Integer.parseInt(studentId));
+                        pstmt.setInt(1, currentStudentId);
                         pstmt.setString(2, concertName);
                         pstmt.setString(3, attendanceDate.replace("T", " ") + ":00");
                         pstmt.setString(4, status);
@@ -82,23 +86,22 @@
 
                 else if ("update".equals(action)) {
                     String attendanceId = request.getParameter("attendance_id");
-                    String studentId = request.getParameter("student_id");
                     String concertName = request.getParameter("concert_name");
                     String attendanceDate = request.getParameter("attendance_date");
                     String status = request.getParameter("is_present");
                     String note = request.getParameter("note");
 
                     String sql = "UPDATE concert_attendance "
-                               + "SET student_id = ?, concert_name = ?, attendance_date = ?, is_present = ?, note = ? "
-                               + "WHERE attendance_id = ?";
+                               + "SET concert_name = ?, attendance_date = ?, is_present = ?, note = ? "
+                               + "WHERE attendance_id = ? AND student_id = ?";
 
                     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                        pstmt.setInt(1, Integer.parseInt(studentId));
-                        pstmt.setString(2, concertName);
-                        pstmt.setString(3, attendanceDate.replace("T", " ") + ":00");
-                        pstmt.setString(4, status);
-                        pstmt.setString(5, note);
-                        pstmt.setInt(6, Integer.parseInt(attendanceId));
+                        pstmt.setString(1, concertName);
+                        pstmt.setString(2, attendanceDate.replace("T", " ") + ":00");
+                        pstmt.setString(3, status);
+                        pstmt.setString(4, note);
+                        pstmt.setInt(5, Integer.parseInt(attendanceId));
+                        pstmt.setInt(6, currentStudentId);
                         pstmt.executeUpdate();
                     }
 
@@ -108,10 +111,12 @@
                 else if ("delete".equals(action)) {
                     String attendanceId = request.getParameter("attendance_id");
 
-                    String sql = "DELETE FROM concert_attendance WHERE attendance_id = ?";
+                    String sql = "DELETE FROM concert_attendance "
+                               + "WHERE attendance_id = ? AND student_id = ?";
 
                     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                         pstmt.setInt(1, Integer.parseInt(attendanceId));
+                        pstmt.setInt(2, currentStudentId);
                         pstmt.executeUpdate();
                     }
 
@@ -135,30 +140,33 @@
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
             String sql = "SELECT attendance_id, student_id, concert_name, attendance_date, is_present, note "
                        + "FROM concert_attendance "
+                       + "WHERE student_id = ? "
                        + "ORDER BY attendance_date DESC, attendance_id DESC";
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sql);
-                 ResultSet rs = pstmt.executeQuery()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, currentStudentId);
 
-                while (rs.next()) {
-                    String status = rs.getString("is_present");
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        String status = rs.getString("is_present");
 
-                    if ("출석".equals(status)) {
-                        presentCount++;
-                    } else if ("지각".equals(status)) {
-                        lateCount++;
-                    } else {
-                        absentCount++;
+                        if ("출석".equals(status)) {
+                            presentCount++;
+                        } else if ("지각".equals(status)) {
+                            lateCount++;
+                        } else {
+                            absentCount++;
+                        }
+
+                        attendanceList.add(new String[] {
+                            String.valueOf(rs.getInt("attendance_id")),
+                            String.valueOf(rs.getInt("student_id")),
+                            rs.getString("concert_name"),
+                            String.valueOf(rs.getTimestamp("attendance_date")),
+                            status,
+                            rs.getString("note") == null ? "" : rs.getString("note")
+                        });
                     }
-
-                    attendanceList.add(new String[] {
-                        String.valueOf(rs.getInt("attendance_id")),
-                        String.valueOf(rs.getInt("student_id")),
-                        rs.getString("concert_name"),
-                        String.valueOf(rs.getTimestamp("attendance_date")),
-                        status,
-                        rs.getString("note") == null ? "" : rs.getString("note")
-                    });
                 }
             }
         }
@@ -174,9 +182,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<title>오케스트라 회원 관리 시스템-출결</title>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="assets/css/common.css">
-<title>오케스트라 회원 관리 시스템-출결</title>
 
 <style>
 * {
@@ -191,40 +200,23 @@ body {
     color: #111827;
 }
 
-.layout {
-    display: flex;
-    min-height: 100vh;
+.app-shell .main {
+    padding: 0;
+    max-width: none;
+    min-width: 0;
 }
 
-.sidebar {
-    width: 220px;
-    background: #001f3f;
-    color: white;
-    padding: 24px;
+.content {
+    background: #f5f7fb;
+    width: 100%;
+    overflow-x: hidden;
 }
 
-.logo {
-    color: #f0a023;
-    font-size: 23px;
-    font-weight: bold;
-    line-height: 1.5;
-    margin-bottom: 40px;
-}
-
-.menu div {
-    padding: 14px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-}
-
-.menu .active {
-    background: #e59b22;
-    font-weight: bold;
-}
-
-.main {
-    flex: 1;
-    padding: 40px;
+.attendance-wrap {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
 }
 
 h1 {
@@ -240,7 +232,7 @@ h1 {
 
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 18px;
     margin-bottom: 24px;
 }
@@ -290,25 +282,28 @@ h1 {
 
 .input-form {
     display: grid;
-    grid-template-columns: repeat(5, 1fr) 90px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
     margin-top: 16px;
 }
 
 .input-form input,
 .input-form select {
+    width: 100%;
     padding: 11px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
 }
 
 .input-form button {
+    width: 100%;
     border: none;
     background: #001f3f;
     color: white;
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+    min-height: 43px;
 }
 
 .message {
@@ -324,9 +319,14 @@ h1 {
     color: #dc2626;
 }
 
+.table-card {
+    overflow: hidden;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 th {
@@ -335,14 +335,47 @@ th {
 
 th,
 td {
-    padding: 15px;
+    padding: 14px 10px;
     border-bottom: 1px solid #eee;
     text-align: center;
     font-size: 14px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+    width: 11%;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+    width: 20%;
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+    width: 23%;
+}
+
+th:nth-child(4),
+td:nth-child(4) {
+    width: 12%;
+}
+
+th:nth-child(5),
+td:nth-child(5) {
+    width: 18%;
+}
+
+th:nth-child(6),
+td:nth-child(6) {
+    width: 16%;
 }
 
 .status {
-    padding: 6px 14px;
+    display: inline-block;
+    padding: 6px 12px;
     border-radius: 20px;
     font-weight: bold;
 }
@@ -368,17 +401,19 @@ td {
 
 .action-box {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .btn-small {
-    padding: 7px 12px;
+    padding: 7px 10px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .btn-update {
@@ -398,7 +433,7 @@ td {
 
 .edit-form {
     display: grid;
-    grid-template-columns: 1fr 1.7fr 2fr 1fr 2fr 1.2fr;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 8px;
     align-items: center;
 }
@@ -410,23 +445,114 @@ td {
     border-radius: 6px;
 }
 
-.app-shell > .sidebar {
-    width: auto;
-    padding: 24px 18px;
+@media (max-width: 900px) {
+    .attendance-wrap {
+        padding: 24px 14px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
+    .sub {
+        font-size: 14px;
+    }
+
+    .summary-card,
+    .card {
+        padding: 18px;
+    }
+
+    .num {
+        font-size: 24px;
+    }
+
+    th,
+    td {
+        font-size: 12px;
+        padding: 10px 6px;
+    }
+
+    .status {
+        padding: 5px 8px;
+        font-size: 12px;
+    }
+
+    .btn-small {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
 }
 
-.app-shell .main {
-    padding: 0;
-    max-width: none;
-}
+@media (max-width: 650px) {
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td {
+        display: block;
+        width: 100%;
+    }
 
-.content > .layout > .sidebar {
-    display: none;
-}
+    thead {
+        display: none;
+    }
 
-.content > .layout {
-    display: block;
-    min-height: auto;
+    tr {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        margin-bottom: 14px;
+        padding: 12px;
+    }
+
+    td {
+        border-bottom: none;
+        text-align: left;
+        padding: 8px 4px;
+    }
+
+    td::before {
+        display: inline-block;
+        width: 70px;
+        font-weight: bold;
+        color: #6b7280;
+    }
+
+    td:nth-child(1)::before {
+        content: "학번";
+    }
+
+    td:nth-child(2)::before {
+        content: "날짜";
+    }
+
+    td:nth-child(3)::before {
+        content: "행사명";
+    }
+
+    td:nth-child(4)::before {
+        content: "상태";
+    }
+
+    td:nth-child(5)::before {
+        content: "비고";
+    }
+
+    td:nth-child(6)::before {
+        content: "관리";
+    }
+
+    .action-box {
+        justify-content: flex-start;
+        margin-top: 6px;
+    }
+
+    .row-edit td::before {
+        content: "";
+        display: none;
+    }
 }
 </style>
 </head>
@@ -435,173 +561,150 @@ td {
 
 <div class="app-shell">
     <%@ include file="/WEB-INF/fragments/sidebar.jspf" %>
+
     <main class="main">
         <%@ include file="/WEB-INF/fragments/topbar.jspf" %>
+
         <section class="content">
+            <div class="attendance-wrap">
 
-<div class="layout">
+                <h1>내 출결 현황</h1>
+                <p class="sub"><%= name %>님의 연주회 및 합주 출결 현황을 확인할 수 있습니다.</p>
 
-    <aside class="sidebar">
-        <div class="logo">
-            𝄞 오케스트라<br>
-            Member System
-        </div>
-
-        <div class="menu">
-            <div>홈</div>
-            <div>인원 소개</div>
-            <div>캘린더</div>
-            <div>연습 기록</div>
-            <div class="active">출결</div>
-            <div>사진첩</div>
-            <div>내 프로필</div>
-        </div>
-    </aside>
-
-    <main class="main">
-
-        <h1>출결 현황</h1>
-        <p class="sub">연주회 및 합주 출결 현황을 확인할 수 있습니다.</p>
-
-        <% if (!successMessage.isEmpty()) { %>
-            <div class="message success"><%= successMessage %></div>
-        <% } %>
-
-        <% if (!errorMessage.isEmpty()) { %>
-            <div class="message error"><%= errorMessage %></div>
-        <% } %>
-
-        <section class="summary-grid">
-            <div class="summary-card">
-                <h3>출석</h3>
-                <div class="num present"><%= presentCount %>회</div>
-            </div>
-
-            <div class="summary-card">
-                <h3>지각</h3>
-                <div class="num late"><%= lateCount %>회</div>
-            </div>
-
-            <div class="summary-card">
-                <h3>결석</h3>
-                <div class="num absent"><%= absentCount %>회</div>
-            </div>
-
-            <div class="summary-card">
-                <h3>출석률</h3>
-                <div class="num rate"><%= attendanceRate %>%</div>
-            </div>
-        </section>
-
-        <section class="card form-card">
-            <h3>출석 등록</h3>
-
-            <form class="input-form" method="post" action="attendance.jsp">
-                <input type="hidden" name="action" value="insert">
-
-                <input type="number" name="student_id" placeholder="학번" required>
-                <input type="text" name="concert_name" placeholder="연주회명/합주명" maxlength="50" required>
-                <input type="datetime-local" name="attendance_date" required>
-
-                <select name="is_present">
-                    <option value="출석">출석</option>
-                    <option value="지각">지각</option>
-                    <option value="결석">결석</option>
-                </select>
-
-                <input type="text" name="note" placeholder="비고" maxlength="100">
-
-                <button type="submit">등록</button>
-            </form>
-        </section>
-
-        <section class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>학번</th>
-                        <th>날짜</th>
-                        <th>행사명</th>
-                        <th>상태</th>
-                        <th>비고</th>
-                        <th>관리</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                <% if (attendanceList.isEmpty()) { %>
-                    <tr>
-                        <td colspan="6">등록된 출석 정보가 없습니다.</td>
-                    </tr>
+                <% if (!successMessage.isEmpty()) { %>
+                    <div class="message success"><%= successMessage %></div>
                 <% } %>
 
-                <% for (String[] item : attendanceList) {
-                    String rowId = item[0];
-
-                    String dateForInput = item[3].replace(" ", "T");
-                    if (dateForInput.length() >= 16) {
-                        dateForInput = dateForInput.substring(0, 16);
-                    }
-                %>
-
-                    <tr id="view-row-<%= rowId %>">
-                        <td><%= item[1] %></td>
-                        <td><%= item[3] %></td>
-                        <td><%= item[2] %></td>
-                        <td>
-                            <span class="status <%= item[4].equals("출석") ? "present" : item[4].equals("지각") ? "late" : "absent" %>">
-                                <%= item[4] %>
-                            </span>
-                        </td>
-                        <td><%= item[5] %></td>
-                        <td>
-                            <div class="action-box">
-                                <button type="button" class="btn-small btn-update" onclick="showEdit('<%= rowId %>')">수정</button>
-
-                                <form method="post" action="attendance.jsp" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="attendance_id" value="<%= rowId %>">
-                                    <button class="btn-small btn-delete" type="submit">삭제</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr id="edit-row-<%= rowId %>" class="row-edit">
-                        <td colspan="6">
-                            <form class="edit-form" method="post" action="attendance.jsp">
-                                <input type="hidden" name="action" value="update">
-                                <input type="hidden" name="attendance_id" value="<%= rowId %>">
-
-                                <input class="edit-input" type="number" name="student_id" value="<%= item[1] %>" required>
-                                <input class="edit-input" type="datetime-local" name="attendance_date" value="<%= dateForInput %>" required>
-                                <input class="edit-input" type="text" name="concert_name" value="<%= item[2] %>" maxlength="50" required>
-
-                                <select class="edit-input" name="is_present">
-                                    <option value="출석" <%= "출석".equals(item[4]) ? "selected" : "" %>>출석</option>
-                                    <option value="지각" <%= "지각".equals(item[4]) ? "selected" : "" %>>지각</option>
-                                    <option value="결석" <%= "결석".equals(item[4]) ? "selected" : "" %>>결석</option>
-                                </select>
-
-                                <input class="edit-input" type="text" name="note" value="<%= item[5] %>" maxlength="100">
-
-                                <div class="action-box">
-                                    <button class="btn-small btn-update" type="submit">저장</button>
-                                    <button class="btn-small btn-cancel" type="button" onclick="hideEdit('<%= rowId %>')">취소</button>
-                                </div>
-                            </form>
-                        </td>
-                    </tr>
-
+                <% if (!errorMessage.isEmpty()) { %>
+                    <div class="message error"><%= errorMessage %></div>
                 <% } %>
-                </tbody>
-            </table>
-        </section>
 
-    </main>
+                <section class="summary-grid">
+                    <div class="summary-card">
+                        <h3>출석</h3>
+                        <div class="num present"><%= presentCount %>회</div>
+                    </div>
 
-</div>
+                    <div class="summary-card">
+                        <h3>지각</h3>
+                        <div class="num late"><%= lateCount %>회</div>
+                    </div>
 
+                    <div class="summary-card">
+                        <h3>결석</h3>
+                        <div class="num absent"><%= absentCount %>회</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h3>출석률</h3>
+                        <div class="num rate"><%= attendanceRate %>%</div>
+                    </div>
+                </section>
+
+                <section class="card form-card">
+                    <h3>내 출석 등록</h3>
+
+                    <form class="input-form" method="post" action="attendance.jsp">
+                        <input type="hidden" name="action" value="insert">
+
+                        <input type="text" name="concert_name" placeholder="연주회명/합주명" maxlength="50" required>
+                        <input type="datetime-local" name="attendance_date" required>
+
+                        <select name="is_present">
+                            <option value="출석">출석</option>
+                            <option value="지각">지각</option>
+                            <option value="결석">결석</option>
+                        </select>
+
+                        <input type="text" name="note" placeholder="비고" maxlength="100">
+
+                        <button type="submit">등록</button>
+                    </form>
+                </section>
+
+                <section class="card table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>학번</th>
+                                <th>날짜</th>
+                                <th>행사명</th>
+                                <th>상태</th>
+                                <th>비고</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                        <% if (attendanceList.isEmpty()) { %>
+                            <tr>
+                                <td colspan="6">등록된 출석 정보가 없습니다.</td>
+                            </tr>
+                        <% } %>
+
+                        <% for (String[] item : attendanceList) {
+                            String rowId = item[0];
+
+                            String dateForInput = item[3].replace(" ", "T");
+                            if (dateForInput.length() >= 16) {
+                                dateForInput = dateForInput.substring(0, 16);
+                            }
+                        %>
+
+                            <tr id="view-row-<%= rowId %>">
+                                <td><%= item[1] %></td>
+                                <td><%= item[3] %></td>
+                                <td><%= item[2] %></td>
+                                <td>
+                                    <span class="status <%= item[4].equals("출석") ? "present" : item[4].equals("지각") ? "late" : "absent" %>">
+                                        <%= item[4] %>
+                                    </span>
+                                </td>
+                                <td><%= item[5] %></td>
+                                <td>
+                                    <div class="action-box">
+                                        <button type="button" class="btn-small btn-update" onclick="showEdit('<%= rowId %>')">수정</button>
+
+                                        <form method="post" action="attendance.jsp" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="attendance_id" value="<%= rowId %>">
+                                            <button class="btn-small btn-delete" type="submit">삭제</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr id="edit-row-<%= rowId %>" class="row-edit">
+                                <td colspan="6">
+                                    <form class="edit-form" method="post" action="attendance.jsp">
+                                        <input type="hidden" name="action" value="update">
+                                        <input type="hidden" name="attendance_id" value="<%= rowId %>">
+
+                                        <input class="edit-input" type="datetime-local" name="attendance_date" value="<%= dateForInput %>" required>
+                                        <input class="edit-input" type="text" name="concert_name" value="<%= item[2] %>" maxlength="50" required>
+
+                                        <select class="edit-input" name="is_present">
+                                            <option value="출석" <%= "출석".equals(item[4]) ? "selected" : "" %>>출석</option>
+                                            <option value="지각" <%= "지각".equals(item[4]) ? "selected" : "" %>>지각</option>
+                                            <option value="결석" <%= "결석".equals(item[4]) ? "selected" : "" %>>결석</option>
+                                        </select>
+
+                                        <input class="edit-input" type="text" name="note" value="<%= item[5] %>" maxlength="100">
+
+                                        <div class="action-box">
+                                            <button class="btn-small btn-update" type="submit">저장</button>
+                                            <button class="btn-small btn-cancel" type="button" onclick="hideEdit('<%= rowId %>')">취소</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+
+                        <% } %>
+                        </tbody>
+                    </table>
+                </section>
+
+            </div>
         </section>
     </main>
 </div>
@@ -617,5 +720,6 @@ function hideEdit(id) {
     document.getElementById("edit-row-" + id).style.display = "none";
 }
 </script>
+
 </body>
 </html>

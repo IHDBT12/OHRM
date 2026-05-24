@@ -1,8 +1,20 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.sql.*" %>
+<%@ page import="java.util.*" %>
 <%@ page import="java.io.File" %>
 <%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
+
+<%!
+    public String js(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "");
+    }
+%>
+
 <%
     request.setCharacterEncoding("UTF-8");
 
@@ -14,7 +26,15 @@
 
     int studentId = sessionStudentId;
     String activeMenu = "practice";
+
+    String url = "jdbc:mariadb://localhost:3306/ohrm_db";
+    String dbUser = "root";
+    String dbPassword = "1234";
+
     String name = "";
+    String errorMessage = "";
+    String successMessage = "";
+
     String memberDefaultImage = "assets/img/member/member.png";
     String memberCandidateImage = "assets/img/member/" + studentId + ".png";
     String memberCandidatePath = application.getRealPath(memberCandidateImage);
@@ -24,9 +44,12 @@
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
-        try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:3306/ohrm_db", "root", "1234");
+
+        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword);
              PreparedStatement pstmt = conn.prepareStatement("SELECT name FROM members WHERE student_id = ?")) {
+
             pstmt.setInt(1, studentId);
+
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     name = text(rs, "name");
@@ -34,16 +57,137 @@
             }
         }
     } catch (Exception e) {
-        name = "";
+        errorMessage = "회원 정보 조회 중 오류가 발생했습니다: " + e.getMessage();
+    }
+
+    if ("POST".equalsIgnoreCase(request.getMethod())) {
+        String action = request.getParameter("action");
+
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+
+            try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
+
+                if ("insert".equals(action)) {
+                    String practiceDate = request.getParameter("practice_date");
+                    String instrument = request.getParameter("instrument");
+                    int hour = Integer.parseInt(request.getParameter("hour"));
+                    int minute = Integer.parseInt(request.getParameter("minute"));
+                    String memo = request.getParameter("memo");
+
+                    int totalMinutes = hour * 60 + minute;
+
+                    if (totalMinutes <= 0) {
+                        errorMessage = "0시간 0분은 기록할 수 없습니다.";
+                    } else {
+                        String sql = "INSERT INTO practice_records "
+                                   + "(student_id, practice_date, instrument, practice_minutes, memo) "
+                                   + "VALUES (?, ?, ?, ?, ?)";
+
+                        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                            pstmt.setInt(1, studentId);
+                            pstmt.setString(2, practiceDate);
+                            pstmt.setString(3, instrument);
+                            pstmt.setInt(4, totalMinutes);
+                            pstmt.setString(5, memo);
+                            pstmt.executeUpdate();
+                        }
+
+                        successMessage = "연습 기록이 저장되었습니다.";
+                    }
+                }
+
+                else if ("update".equals(action)) {
+                    int recordId = Integer.parseInt(request.getParameter("record_id"));
+                    String practiceDate = request.getParameter("practice_date");
+                    String instrument = request.getParameter("instrument");
+                    int hour = Integer.parseInt(request.getParameter("hour"));
+                    int minute = Integer.parseInt(request.getParameter("minute"));
+                    String memo = request.getParameter("memo");
+
+                    int totalMinutes = hour * 60 + minute;
+
+                    if (totalMinutes <= 0) {
+                        errorMessage = "0시간 0분은 기록할 수 없습니다.";
+                    } else {
+                        String sql = "UPDATE practice_records "
+                                   + "SET practice_date = ?, instrument = ?, practice_minutes = ?, memo = ? "
+                                   + "WHERE record_id = ? AND student_id = ?";
+
+                        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                            pstmt.setString(1, practiceDate);
+                            pstmt.setString(2, instrument);
+                            pstmt.setInt(3, totalMinutes);
+                            pstmt.setString(4, memo);
+                            pstmt.setInt(5, recordId);
+                            pstmt.setInt(6, studentId);
+                            pstmt.executeUpdate();
+                        }
+
+                        successMessage = "연습 기록이 수정되었습니다.";
+                    }
+                }
+
+                else if ("delete".equals(action)) {
+                    int recordId = Integer.parseInt(request.getParameter("record_id"));
+
+                    String sql = "DELETE FROM practice_records "
+                               + "WHERE record_id = ? AND student_id = ?";
+
+                    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        pstmt.setInt(1, recordId);
+                        pstmt.setInt(2, studentId);
+                        pstmt.executeUpdate();
+                    }
+
+                    successMessage = "연습 기록이 삭제되었습니다.";
+                }
+            }
+        } catch (Exception e) {
+            errorMessage = "처리 중 오류가 발생했습니다: " + e.getMessage();
+        }
+    }
+
+    List<String[]> records = new ArrayList<>();
+
+    try {
+        Class.forName("org.mariadb.jdbc.Driver");
+
+        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
+            String sql = "SELECT record_id, practice_date, instrument, practice_minutes, memo "
+                       + "FROM practice_records "
+                       + "WHERE student_id = ? "
+                       + "ORDER BY practice_date DESC, record_id DESC";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, studentId);
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        records.add(new String[] {
+                            String.valueOf(rs.getInt("record_id")),
+                            String.valueOf(rs.getDate("practice_date")),
+                            rs.getString("instrument"),
+                            String.valueOf(rs.getInt("practice_minutes")),
+                            rs.getString("memo") == null ? "" : rs.getString("memo")
+                        });
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        errorMessage = "연습 기록 조회 중 오류가 발생했습니다: " + e.getMessage();
     }
 %>
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<title>연습기록</title>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="assets/css/common.css">
-<title>연습기록</title>
 
 <style>
 * {
@@ -56,57 +200,50 @@ body {
     background: #f5f7fb;
 }
 
-.layout {
-    display: flex;
-    min-height: 100vh;
+.app-shell .main {
+    padding: 0;
+    max-width: none;
+    min-width: 0;
 }
 
-.sidebar {
-    width: 220px;
-    background: #001f3f;
-    color: white;
-    padding: 24px;
-    flex-shrink: 0;
+.content {
+    background: #f5f7fb;
+    width: 100%;
+    overflow-x: hidden;
 }
 
-.logo {
-    color: #f0a12b;
-    font-size: 22px;
-    font-weight: bold;
-    margin-bottom: 40px;
-}
-
-.menu div {
-    padding: 14px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-}
-
-.menu .active {
-    background: #e59b22;
-}
-
-.main {
-    flex: 1;
-    padding: 32px;
-    max-width: calc(100vw - 220px);
+.practice-wrap {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 40px 24px;
 }
 
 h1 {
     color: #001f3f;
+    margin-bottom: 8px;
 }
 
-.card, .summary-box {
+.sub {
+    color: #666;
+    margin-bottom: 28px;
+}
+
+.card,
+.summary-box {
+    width: 100%;
+    max-width: 100%;
     background: white;
     border: 1px solid #ddd;
     border-radius: 16px;
     padding: 24px;
     margin-bottom: 24px;
+    overflow: hidden;
 }
 
 .form-row {
     display: grid;
-    grid-template-columns: 170px 160px 90px 90px 1fr 120px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 14px;
     align-items: end;
 }
@@ -117,7 +254,8 @@ label {
     margin-bottom: 8px;
 }
 
-input, select {
+input,
+select {
     width: 100%;
     padding: 11px;
     border: 1px solid #ccc;
@@ -137,12 +275,27 @@ button {
 .cancel-btn {
     background: #6c757d;
     display: none;
+    margin-top: 8px;
+}
+
+.message {
+    margin-bottom: 16px;
+    font-weight: bold;
+}
+
+.success {
+    color: #16a34a;
+}
+
+.error {
+    color: #dc2626;
 }
 
 .content-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 260px;
     gap: 20px;
+    width: 100%;
 }
 
 .heatmap-header {
@@ -156,6 +309,9 @@ button {
     gap: 12px;
     margin-top: 24px;
     overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    padding-bottom: 10px;
 }
 
 .week-labels {
@@ -171,6 +327,8 @@ button {
     display: grid;
     grid-template-columns: repeat(12, max-content);
     gap: 16px;
+    width: max-content;
+    min-width: max-content;
 }
 
 .month-title {
@@ -215,6 +373,7 @@ button {
     gap: 14px;
     margin-top: 20px;
     font-size: 13px;
+    flex-wrap: wrap;
 }
 
 .legend-item {
@@ -236,6 +395,7 @@ button {
 .record-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .record-table th,
@@ -243,6 +403,8 @@ button {
     padding: 12px;
     border-bottom: 1px solid #ddd;
     text-align: center;
+    word-break: keep-all;
+    overflow-wrap: break-word;
 }
 
 .record-table th {
@@ -253,9 +415,15 @@ button {
     text-align: left;
 }
 
+.action-box {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 .action-btn {
     padding: 7px 10px;
-    margin: 2px;
     border-radius: 6px;
     font-size: 13px;
 }
@@ -268,58 +436,80 @@ button {
     background: #dc3545;
 }
 
+.save-edit-btn {
+    background: #001f3f;
+}
+
 .empty-record {
     text-align: center;
     color: #777;
     padding: 20px;
 }
 
+.row-edit {
+    display: none;
+}
+
+.edit-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+}
+
 @media (max-width: 1100px) {
-    .layout {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        width: 100%;
-    }
-
-    .main {
-        max-width: 100vw;
-        padding: 20px;
-    }
-
     .content-grid {
         grid-template-columns: 1fr;
     }
 
-    .form-row {
-        grid-template-columns: 1fr 1fr;
+    .practice-wrap {
+        padding: 24px 14px;
     }
 }
 
-@media (max-width: 600px) {
-    .form-row {
-        grid-template-columns: 1fr;
+@media (max-width: 700px) {
+    .record-table,
+    .record-table thead,
+    .record-table tbody,
+    .record-table tr,
+    .record-table th,
+    .record-table td {
+        display: block;
+        width: 100%;
     }
-}
 
-.app-shell > .sidebar {
-    width: auto;
-    padding: 24px 18px;
-}
+    .record-table thead {
+        display: none;
+    }
 
-.app-shell .main {
-    padding: 0;
-    max-width: none;
-}
+    .record-table tr {
+        border: 1px solid #ddd;
+        border-radius: 14px;
+        padding: 12px;
+        margin-bottom: 14px;
+    }
 
-.content > .layout > .sidebar {
-    display: none;
-}
+    .record-table td {
+        border-bottom: none;
+        text-align: left;
+        padding: 8px 4px;
+    }
 
-.content > .layout {
-    display: block;
-    min-height: auto;
+    .record-table td::before {
+        display: inline-block;
+        width: 80px;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .record-table td:nth-child(1)::before { content: "날짜"; }
+    .record-table td:nth-child(2)::before { content: "악기"; }
+    .record-table td:nth-child(3)::before { content: "시간"; }
+    .record-table td:nth-child(4)::before { content: "메모"; }
+    .record-table td:nth-child(5)::before { content: "작업"; }
+
+    .action-box {
+        justify-content: flex-start;
+    }
 }
 </style>
 </head>
@@ -328,137 +518,206 @@ button {
 
 <div class="app-shell">
     <%@ include file="/WEB-INF/fragments/sidebar.jspf" %>
+
     <main class="main">
         <%@ include file="/WEB-INF/fragments/topbar.jspf" %>
+
         <section class="content">
+            <div class="practice-wrap">
 
-<div class="layout">
+                <h1>내 연습 기록</h1>
+                <p class="sub"><%= name %>님의 연습 기록을 조회하고 수정할 수 있습니다.</p>
 
-    <aside class="sidebar">
-        <div class="logo">오케스트라<br>Member System</div>
+                <% if (!successMessage.isEmpty()) { %>
+                    <div class="message success"><%= successMessage %></div>
+                <% } %>
 
-        <div class="menu">
-            <div>홈</div>
-            <div>인원 소개</div>
-            <div>캘린더</div>
-            <div class="active">연습 기록</div>
-            <div>출결</div>
-            <div>사진첩</div>
-            <div>내 프로필</div>
-        </div>
-    </aside>
+                <% if (!errorMessage.isEmpty()) { %>
+                    <div class="message error"><%= errorMessage %></div>
+                <% } %>
 
-    <main class="main">
+                <section class="card">
+                    <h2>연습 기록 입력</h2>
 
-        <h1>연습 기록</h1>
+                    <form class="form-row" method="post" action="practice_record.jsp">
+                        <input type="hidden" name="action" value="insert">
 
-        <section class="card">
-            <h2>연습 기록 입력</h2>
+                        <div>
+                            <label>날짜</label>
+                            <input type="date" name="practice_date" id="dateInput" required>
+                        </div>
 
-            <div class="form-row">
-                <div>
-                    <label>날짜</label>
-                    <input type="date" id="dateInput">
+                        <div>
+                            <label>악기</label>
+                            <input type="text" name="instrument" placeholder="악기 입력" maxlength="50" required>
+                        </div>
+
+                        <div>
+                            <label>시간</label>
+                            <select name="hour" id="hourInput"></select>
+                        </div>
+
+                        <div>
+                            <label>분</label>
+                            <select name="minute" id="minuteInput"></select>
+                        </div>
+
+                        <div>
+                            <label>메모</label>
+                            <input type="text" name="memo" placeholder="메모 입력" maxlength="100">
+                        </div>
+
+                        <div>
+                            <button type="submit">저장하기</button>
+                        </div>
+                    </form>
+                </section>
+
+                <div class="content-grid">
+
+                    <section class="card">
+                        <div class="heatmap-header">
+                            <h2 id="heatmapTitle">연습 현황</h2>
+                        </div>
+
+                        <div class="heatmap-area">
+                            <div class="week-labels">
+                                <div>월</div>
+                                <div>화</div>
+                                <div>수</div>
+                                <div>목</div>
+                                <div>금</div>
+                                <div>토</div>
+                                <div>일</div>
+                            </div>
+
+                            <div id="heatmap" class="months-wrap"></div>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item"><div class="cell level-0"></div>0</div>
+                            <div class="legend-item"><div class="cell level-1"></div>~ 1h</div>
+                            <div class="legend-item"><div class="cell level-2"></div>1h ~ 3h</div>
+                            <div class="legend-item"><div class="cell level-3"></div>3h ~</div>
+                        </div>
+                    </section>
+
+                    <aside>
+                        <div class="summary-box">
+                            <h3>이번 달 총 연습 시간</h3>
+                            <div class="summary-number" id="monthTotal">0시간</div>
+                            <p id="monthText"></p>
+                        </div>
+
+                        <div class="summary-box">
+                            <h3>연속 기록</h3>
+                            <div class="summary-number" id="streakText">0일</div>
+                        </div>
+                    </aside>
+
                 </div>
 
-                <div>
-                    <label>악기</label>
-                    <input type="text" id="instrumentInput" placeholder="악기 입력">
-                </div>
+                <section class="card">
+                    <h2>최근 연습 기록</h2>
 
-                <div>
-					<label>시간</label>
-					<select id="hourInput"></select>
-				</div>
-				<div>
-					<label>분</label>
-					<select id="minuteInput"></select>
-                </div>
+                    <table class="record-table">
+                        <thead>
+                            <tr>
+                                <th>날짜</th>
+                                <th>악기</th>
+                                <th>연습 시간</th>
+                                <th>메모</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
 
-                <div>
-                    <label>메모</label>
-                    <input type="text" id="memoInput" placeholder="메모 입력">
-                </div>
+                        <tbody>
+                        <% if (records.isEmpty()) { %>
+                            <tr>
+                                <td colspan="5" class="empty-record">최근 연습 기록이 없습니다.</td>
+                            </tr>
+                        <% } %>
 
-                <div>
-                    <button id="saveBtn" onclick="savePractice()">저장하기</button>
-                    <button id="cancelBtn" class="cancel-btn" onclick="cancelEdit()">취소</button>
-                </div>
+                        <% for (String[] record : records) {
+                            String recordId = record[0];
+                            int minutes = Integer.parseInt(record[3]);
+                            int hour = minutes / 60;
+                            int minute = minutes % 60;
+                        %>
+                            <tr id="view-row-<%= recordId %>">
+                                <td><%= record[1] %></td>
+                                <td><%= record[2] %></td>
+                                <td><%= hour %>시간 <%= minute %>분</td>
+                                <td class="memo"><%= record[4].isEmpty() ? "-" : record[4] %></td>
+                                <td>
+                                    <div class="action-box">
+                                        <button type="button" class="action-btn edit-btn" onclick="showEdit('<%= recordId %>')">수정</button>
+
+                                        <form method="post" action="practice_record.jsp" onsubmit="return confirm('해당 연습 기록을 삭제하시겠습니까?');">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="record_id" value="<%= recordId %>">
+                                            <button type="submit" class="action-btn delete-btn">삭제</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr id="edit-row-<%= recordId %>" class="row-edit">
+                                <td colspan="5">
+                                    <form class="edit-form" method="post" action="practice_record.jsp">
+                                        <input type="hidden" name="action" value="update">
+                                        <input type="hidden" name="record_id" value="<%= recordId %>">
+
+                                        <input type="date" name="practice_date" value="<%= record[1] %>" required>
+                                        <input type="text" name="instrument" value="<%= record[2] %>" maxlength="50" required>
+
+                                        <select name="hour">
+                                            <% for (int h = 0; h <= 8; h++) { %>
+                                                <option value="<%= h %>" <%= h == hour ? "selected" : "" %>><%= h %></option>
+                                            <% } %>
+                                        </select>
+
+                                        <select name="minute">
+                                            <% for (int m = 0; m <= 59; m++) { %>
+                                                <option value="<%= m %>" <%= m == minute ? "selected" : "" %>><%= m %></option>
+                                            <% } %>
+                                        </select>
+
+                                        <input type="text" name="memo" value="<%= record[4] %>" maxlength="100">
+
+                                        <div class="action-box">
+                                            <button type="submit" class="action-btn save-edit-btn">저장</button>
+                                            <button type="button" class="action-btn cancel-btn" style="display:inline-block;" onclick="hideEdit('<%= recordId %>')">취소</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </section>
+
             </div>
-        </section>
-
-        <div class="content-grid">
-
-            <section class="card">
-                <div class="heatmap-header">
-                    <h2 id="heatmapTitle">연습 현황</h2>
-                </div>
-                <div class="heatmap-area">
-                    <div class="week-labels">
-                        <div>월</div>
-                        <div>화</div>
-                        <div>수</div>
-                        <div>목</div>
-                        <div>금</div>
-                        <div>토</div>
-                        <div>일</div>
-                    </div>
-
-                    <div id="heatmap" class="months-wrap"></div>
-                </div>
-
-                <div class="legend">
-                    <div class="legend-item"><div class="cell level-0"></div>0</div>
-                    <div class="legend-item"><div class="cell level-1"></div>~ 1h</div>
-                    <div class="legend-item"><div class="cell level-2"></div>1h ~ 3h</div>
-                    <div class="legend-item"><div class="cell level-3"></div>3h ~</div>
-                </div>
-            </section>
-
-            <aside>
-                <div class="summary-box">
-                    <h3>이번 달 총 연습 시간</h3>
-                    <div class="summary-number" id="monthTotal">0시간</div>
-                    <p id="monthText"></p>
-                </div>
-
-                <div class="summary-box">
-                    <h3>연속 기록</h3>
-                    <div class="summary-number" id="streakText">0일</div>
-                </div>
-            </aside>
-
-        </div>
-
-        <section class="card">
-            <h2>최근 연습 기록</h2>
-
-            <table class="record-table">
-                <thead>
-                    <tr>
-                        <th>날짜</th>
-                        <th>악기</th>
-                        <th>연습 시간</th>
-                        <th>메모</th>
-                        <th>작업</th>
-                    </tr>
-                </thead>
-                <tbody id="recordList"></tbody>
-            </table>
-        </section>
-
-    </main>
-
-</div>
-
         </section>
     </main>
 </div>
 
 <script>
 const YEAR = new Date().getFullYear();
-let records = JSON.parse(localStorage.getItem("practiceRecords")) || [];
-let editId = null;
+
+const records = [
+<% for (int i = 0; i < records.size(); i++) {
+    String[] r = records.get(i);
+%>
+    {
+        id: <%= r[0] %>,
+        date: "<%= js(r[1]) %>",
+        instrument: "<%= js(r[2]) %>",
+        minutes: <%= r[3] %>,
+        memo: "<%= js(r[4]) %>"
+    }<%= i < records.size() - 1 ? "," : "" %>
+<% } %>
+];
 
 const today = new Date();
 const todayKey = makeDateKey(today);
@@ -472,100 +731,23 @@ function makeDateKey(date) {
         String(date.getDate()).padStart(2, "0");
 }
 
-function saveToStorage() {
-    localStorage.setItem("practiceRecords", JSON.stringify(records));
-}
+function initializeTimeSelect() {
+    const hourSelect = document.getElementById("hourInput");
+    const minuteSelect = document.getElementById("minuteInput");
 
-function savePractice() {
-    const date = document.getElementById("dateInput").value;
-    const instrument = document.getElementById("instrumentInput").value.trim();
-    const hour = Number(document.getElementById("hourInput").value);
-    const minute = Number(document.getElementById("minuteInput").value);
-    const memo = document.getElementById("memoInput").value.trim();
-
-    const totalMinutes = hour * 60 + minute;
-
-    if (!date) {
-        alert("날짜를 입력해주세요.");
-        return;
+    for (let h = 0; h <= 8; h++) {
+        const option = document.createElement("option");
+        option.value = h;
+        option.textContent = h;
+        hourSelect.appendChild(option);
     }
 
-    if (!instrument) {
-        alert("악기를 입력해주세요.");
-        return;
+    for (let m = 0; m <= 59; m++) {
+        const option = document.createElement("option");
+        option.value = m;
+        option.textContent = m;
+        minuteSelect.appendChild(option);
     }
-
-    if (totalMinutes === 0) {
-        alert("0시간 0분은 기록할 수 없습니다.");
-        return;
-    }
-
-    if (editId !== null) {
-        const target = records.find(record => record.id === editId);
-
-        if (target) {
-            target.date = date;
-            target.instrument = instrument;
-            target.minutes = totalMinutes;
-            target.memo = memo;
-        }
-
-        editId = null;
-        document.getElementById("saveBtn").textContent = "저장하기";
-        document.getElementById("cancelBtn").style.display = "none";
-    } else {
-        records.push({
-            id: Date.now(),
-            date: date,
-            instrument: instrument,
-            minutes: totalMinutes,
-            memo: memo
-        });
-    }
-
-    saveToStorage();
-    resetForm();
-    renderAll();
-}
-
-function resetForm() {
-    document.getElementById("dateInput").value = todayKey;
-    document.getElementById("instrumentInput").value = "";
-    document.getElementById("hourInput").value = "0";
-    document.getElementById("minuteInput").value = "0";
-    document.getElementById("memoInput").value = "";
-}
-
-function cancelEdit() {
-    editId = null;
-    resetForm();
-    document.getElementById("saveBtn").textContent = "저장하기";
-    document.getElementById("cancelBtn").style.display = "none";
-}
-
-function editRecord(id) {
-    const record = records.find(item => item.id === id);
-
-    if (!record) return;
-
-    editId = id;
-
-    document.getElementById("dateInput").value = record.date;
-    document.getElementById("instrumentInput").value = record.instrument;
-    document.getElementById("hourInput").value = String(Math.floor(record.minutes / 60));
-    document.getElementById("minuteInput").value = String(record.minutes % 60);
-    document.getElementById("memoInput").value = record.memo;
-
-    document.getElementById("saveBtn").textContent = "수정하기";
-    document.getElementById("cancelBtn").style.display = "block";
-}
-
-function deleteRecord(id) {
-    if (!confirm("해당 연습 기록을 삭제하시겠습니까?")) return;
-
-    records = records.filter(record => record.id !== id);
-    saveToStorage();
-    renderAll();
 }
 
 function getPracticeDataByDate() {
@@ -656,14 +838,15 @@ function formatTime(minutes) {
 
 function renderMonthTotal() {
     const now = new Date();
-
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
     let total = 0;
 
     records.forEach(record => {
-        const [recordYear, recordMonth] = record.date.split("-").map(Number);
+        const parts = record.date.split("-").map(Number);
+        const recordYear = parts[0];
+        const recordMonth = parts[1];
 
         if (recordYear === currentYear && recordMonth === currentMonth) {
             total += record.minutes;
@@ -705,72 +888,21 @@ function renderStreak() {
     document.getElementById("streakText").textContent = streak + "일";
 }
 
-function renderRecords() {
-    const recordList = document.getElementById("recordList");
-    recordList.innerHTML = "";
-
-    if (records.length === 0) {
-        recordList.innerHTML =
-            "<tr><td colspan='5' class='empty-record'>최근 연습 기록이 없습니다.</td></tr>";
-        return;
-    }
-
-    const sortedRecords = [...records].sort((a, b) => {
-        return new Date(b.date) - new Date(a.date);
-    });
-
-    sortedRecords.forEach(record => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML =
-            "<td>" + record.date + "</td>" +
-            "<td>" + record.instrument + "</td>" +
-            "<td>" + formatTime(record.minutes) + "</td>" +
-            "<td class='memo'>" + (record.memo || "-") + "</td>" +
-            "<td>" +
-                "<button class='action-btn edit-btn' onclick='editRecord(" + record.id + ")'>수정</button>" +
-                "<button class='action-btn delete-btn' onclick='deleteRecord(" + record.id + ")'>삭제</button>" +
-            "</td>";
-
-        recordList.appendChild(tr);
-    });
+function showEdit(id) {
+    document.getElementById("view-row-" + id).style.display = "none";
+    document.getElementById("edit-row-" + id).style.display = "table-row";
 }
 
-function initializeTimeSelect() {
-    const hourSelect = document.getElementById("hourInput");
-    const minuteSelect = document.getElementById("minuteInput");
-
-    hourSelect.innerHTML = "";
-    minuteSelect.innerHTML = "";
-
-    // 0 ~ 8시간
-    for (let h = 0; h <= 8; h++) {
-        const option = document.createElement("option");
-        option.value = h;
-        option.textContent = h;
-        hourSelect.appendChild(option);
-    }
-
-    // 0 ~ 59분
-    for (let m = 0; m <= 59; m++) {
-        const option = document.createElement("option");
-        option.value = m;
-        option.textContent = m;
-        minuteSelect.appendChild(option);
-    }
+function hideEdit(id) {
+    document.getElementById("view-row-" + id).style.display = "table-row";
+    document.getElementById("edit-row-" + id).style.display = "none";
 }
 
 initializeTimeSelect();
-
-function renderAll() {
-    renderHeatmap();
-    renderMonthTotal();
-    renderStreak();
-    renderRecords();
-}
-
-renderAll();
+renderHeatmap();
+renderMonthTotal();
+renderStreak();
 </script>
-</body>
 
+</body>
 </html>
