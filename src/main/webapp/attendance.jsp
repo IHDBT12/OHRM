@@ -69,17 +69,20 @@
                     String status = request.getParameter("is_present");
                     String note = request.getParameter("note");
 
+                    int attendanceYear = Integer.parseInt(attendanceDate.substring(0, 4));
+
                     String sql = "INSERT INTO concert_attendance "
-                               + "(student_id, concert_name, attendance_date, attendance_time, is_present, note) "
-                               + "VALUES (?, ?, ?, ?, ?, ?)";
+                               + "(student_id, concert_name, attendance_date, attendance_time, attendance_year, is_present, note) "
+                               + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
                     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                         pstmt.setInt(1, currentStudentId);
                         pstmt.setString(2, concertName);
                         pstmt.setString(3, attendanceDate);
                         pstmt.setString(4, attendanceTime);
-                        pstmt.setString(5, status);
-                        pstmt.setString(6, note);
+                        pstmt.setInt(5, attendanceYear);
+                        pstmt.setString(6, status);
+                        pstmt.setString(7, note);
                         pstmt.executeUpdate();
                     }
 
@@ -94,18 +97,21 @@
                     String status = request.getParameter("is_present");
                     String note = request.getParameter("note");
 
+                    int attendanceYear = Integer.parseInt(attendanceDate.substring(0, 4));
+
                     String sql = "UPDATE concert_attendance "
-                               + "SET concert_name = ?, attendance_date = ?, attendance_time = ?, is_present = ?, note = ? "
+                               + "SET concert_name = ?, attendance_date = ?, attendance_time = ?, attendance_year = ?, is_present = ?, note = ? "
                                + "WHERE attendance_id = ? AND student_id = ?";
 
                     try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                         pstmt.setString(1, concertName);
                         pstmt.setString(2, attendanceDate);
                         pstmt.setString(3, attendanceTime);
-                        pstmt.setString(4, status);
-                        pstmt.setString(5, note);
-                        pstmt.setInt(6, Integer.parseInt(attendanceId));
-                        pstmt.setInt(7, currentStudentId);
+                        pstmt.setInt(4, attendanceYear);
+                        pstmt.setString(5, status);
+                        pstmt.setString(6, note);
+                        pstmt.setInt(7, Integer.parseInt(attendanceId));
+                        pstmt.setInt(8, currentStudentId);
                         pstmt.executeUpdate();
                     }
 
@@ -142,7 +148,7 @@
         Class.forName("org.mariadb.jdbc.Driver");
 
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
-            String sql = "SELECT attendance_id, student_id, concert_name, attendance_date, attendance_time, is_present, note "
+            String sql = "SELECT attendance_id, student_id, concert_name, attendance_date, attendance_time, attendance_year, is_present, note "
                        + "FROM concert_attendance "
                        + "WHERE student_id = ? "
                        + "ORDER BY attendance_date DESC, attendance_time DESC, attendance_id DESC";
@@ -174,6 +180,7 @@
                             rs.getString("concert_name"),
                             String.valueOf(rs.getDate("attendance_date")),
                             timeText,
+                            String.valueOf(rs.getInt("attendance_year")),
                             status,
                             rs.getString("note") == null ? "" : rs.getString("note")
                         });
@@ -517,7 +524,14 @@ td {
                     <form class="input-form" method="post" action="attendance.jsp">
                         <input type="hidden" name="action" value="insert">
 
-                        <input type="text" name="concert_name" placeholder="연주회명/합주명" maxlength="50" required>
+                        <select name="concert_name" required>
+                            <option value="">연주회명/합주명 선택</option>
+                            <option value="신입생환영회">신입생환영회</option>
+                            <option value="창립제">창립제</option>
+                            <option value="정기연주회">정기연주회</option>
+                            <option value="향상연주회">향상연주회</option>
+                        </select>
+
                         <input type="date" name="attendance_date" required>
                         <input type="time" name="attendance_time" required>
 
@@ -538,6 +552,7 @@ td {
                         <thead>
                             <tr>
                                 <th>학번</th>
+                                <th>연도</th>
                                 <th>날짜</th>
                                 <th>시간</th>
                                 <th>행사명</th>
@@ -550,7 +565,7 @@ td {
                         <tbody>
                         <% if (attendanceList.isEmpty()) { %>
                             <tr>
-                                <td colspan="7">등록된 출석 정보가 없습니다.</td>
+                                <td colspan="8">등록된 출석 정보가 없습니다.</td>
                             </tr>
                         <% } %>
 
@@ -558,19 +573,23 @@ td {
                             String rowId = item[0];
                             String dateOnly = item[3];
                             String timeOnly = item[4];
+                            String yearOnly = item[5];
+                            String status = item[6];
+                            String note = item[7];
                         %>
 
                             <tr id="view-row-<%= rowId %>">
                                 <td><%= item[1] %></td>
+                                <td><%= yearOnly %></td>
                                 <td><%= dateOnly %></td>
                                 <td><%= timeOnly %></td>
                                 <td><%= item[2] %></td>
                                 <td>
-                                    <span class="status <%= item[5].equals("출석") ? "present" : item[5].equals("지각") ? "late" : "absent" %>">
-                                        <%= item[5] %>
+                                    <span class="status <%= status.equals("출석") ? "present" : status.equals("지각") ? "late" : "absent" %>">
+                                        <%= status %>
                                     </span>
                                 </td>
-                                <td><%= item[6] %></td>
+                                <td><%= note %></td>
                                 <td>
                                     <div class="action-box">
                                         <button type="button" class="btn-small btn-update" onclick="showEdit('<%= rowId %>')">수정</button>
@@ -585,22 +604,28 @@ td {
                             </tr>
 
                             <tr id="edit-row-<%= rowId %>" class="row-edit">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <form class="edit-form" method="post" action="attendance.jsp">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="attendance_id" value="<%= rowId %>">
 
-                                        <input class="edit-input" type="date" name="attendance_date" value="<%= dateOnly %>" required>
-                                        <input class="edit-input" type="time" name="attendance_time" value="<%= timeOnly %>" required>
-                                        <input class="edit-input" type="text" name="concert_name" value="<%= item[2] %>" maxlength="50" required>
-
-                                        <select class="edit-input" name="is_present">
-                                            <option value="출석" <%= "출석".equals(item[5]) ? "selected" : "" %>>출석</option>
-                                            <option value="지각" <%= "지각".equals(item[5]) ? "selected" : "" %>>지각</option>
-                                            <option value="결석" <%= "결석".equals(item[5]) ? "selected" : "" %>>결석</option>
+                                        <select class="edit-input" name="concert_name" required>
+                                            <option value="신입생환영회" <%= "신입생환영회".equals(item[2]) ? "selected" : "" %>>신입생환영회</option>
+                                            <option value="창립제" <%= "창립제".equals(item[2]) ? "selected" : "" %>>창립제</option>
+                                            <option value="정기연주회" <%= "정기연주회".equals(item[2]) ? "selected" : "" %>>정기연주회</option>
+                                            <option value="향상연주회" <%= "향상연주회".equals(item[2]) ? "selected" : "" %>>향상연주회</option>
                                         </select>
 
-                                        <input class="edit-input" type="text" name="note" value="<%= item[6] %>" maxlength="100">
+                                        <input class="edit-input" type="date" name="attendance_date" value="<%= dateOnly %>" required>
+                                        <input class="edit-input" type="time" name="attendance_time" value="<%= timeOnly %>" required>
+
+                                        <select class="edit-input" name="is_present">
+                                            <option value="출석" <%= "출석".equals(status) ? "selected" : "" %>>출석</option>
+                                            <option value="지각" <%= "지각".equals(status) ? "selected" : "" %>>지각</option>
+                                            <option value="결석" <%= "결석".equals(status) ? "selected" : "" %>>결석</option>
+                                        </select>
+
+                                        <input class="edit-input" type="text" name="note" value="<%= note %>" maxlength="100">
 
                                         <div class="action-box">
                                             <button class="btn-small btn-update" type="submit">저장</button>
