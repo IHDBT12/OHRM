@@ -34,10 +34,17 @@ public class SignupServlet extends HttpServlet {
 
         String password = value(request, "password");
         String name = value(request, "name");
+        int cohort;
+        try {
+            cohort = Integer.parseInt(value(request, "cohort"));
+        } catch (NumberFormatException e) {
+            response.sendRedirect("signup.jsp?error=invalid");
+            return;
+        }
         String email = value(request, "email");
         boolean isEnrolled = Boolean.parseBoolean(value(request, "isEnrolled"));
 
-        if (password.isEmpty() || name.isEmpty() || email.isEmpty()) {
+        if (password.isEmpty() || name.isEmpty() || email.isEmpty() || cohort < 1) {
             response.sendRedirect("signup.jsp?error=empty");
             return;
         }
@@ -46,15 +53,16 @@ public class SignupServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
                  PreparedStatement pstmt = conn.prepareStatement(
-                     "INSERT INTO members (student_id, password_hash, name, email, is_enrolled, joined_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)"
+                     "INSERT INTO members (student_id, password_hash, name, cohort, email, is_enrolled, joined_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)"
                  )) {
                 pstmt.setInt(1, studentId);
                 pstmt.setString(2, AuthUtils.sha256(password));
                 pstmt.setString(3, name);
-                pstmt.setString(4, email);
-                pstmt.setBoolean(5, isEnrolled);
-                pstmt.setDate(6, new Date(System.currentTimeMillis()));
+                pstmt.setInt(4, cohort);
+                pstmt.setString(5, email);
+                pstmt.setBoolean(6, isEnrolled);
+                pstmt.setDate(7, new Date(System.currentTimeMillis()));
                 pstmt.executeUpdate();
             }
 

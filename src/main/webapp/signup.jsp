@@ -42,6 +42,10 @@
                             <input type="text" class="form-control" id="name" name="name" maxlength="10" required placeholder="홍길동">
                         </div>
                         <div class="mb-3">
+                            <label for="cohort" class="form-label text-secondary small">기수</label>
+                            <input type="number" class="form-control" id="cohort" name="cohort" min="1" max="999" required placeholder="24">
+                        </div>
+                        <div class="mb-3">
                             <label for="email" class="form-label text-secondary small">이메일</label>
                             <input type="email" class="form-control" id="email" name="email" required placeholder="email@gmail.com">
                         </div>

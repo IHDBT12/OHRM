@@ -23,11 +23,11 @@
     String activeMenu = "profile";
 
     String name = "";
+    String cohort = "";
     String major = "";
     String phone = "";
     String enrolledText = "";
     String email = "";
-    String birthDate = "";
     String joinedAt = "";
     String bio = "";
     String instrumentAssetId = "";
@@ -50,13 +50,13 @@
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         name = text(rs, "name");
+                        cohort = text(rs, "cohort");
                         major = text(rs, "major");
                         phone = text(rs, "phone");
                         enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
                         bio = text(rs, "bio");
                         instrumentAssetId = text(rs, "instrument_asset_id");
-                        birthDate = dateText(rs, "birth_date");
                         joinedAt = dateText(rs, "joined_at");
                     }
                 }
@@ -86,11 +86,11 @@
 
     if (name.isEmpty()) {
         name = "";
+        cohort = "";
         major = "";
         phone = "";
         enrolledText = "";
         email = "";
-        birthDate = "";
         joinedAt = "";
         bio = "";
         instrumentAssetId = "";
@@ -164,8 +164,12 @@
                             <div class="control"><%= html(name) %></div>
                         </div>
                         <div class="field">
-                            <label>생년월일</label>
-                            <div class="control"><%= html(birthDate) %></div>
+                            <label>악기</label>
+                            <div class="control"><%= html(instrumentInfo[1]) %></div>
+                        </div>
+                        <div class="field">
+                            <label>기수</label>
+                            <div class="control"><%= html(cohort) %></div>
                         </div>
                         <div class="field">
                             <label>학과</label>

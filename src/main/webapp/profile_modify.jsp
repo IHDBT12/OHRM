@@ -25,11 +25,11 @@
     String activeMenu = "profile";
 
     String name = "";
+    String cohort = "";
     String major = "";
     String phone = "";
     String enrolledText = "";
     String email = "";
-    String birthDate = "";
     String joinedAt = "";
     String bio = "";
     String instrumentAssetId = "";
@@ -54,13 +54,13 @@
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         name = text(rs, "name");
+                        cohort = text(rs, "cohort");
                         major = text(rs, "major");
                         phone = text(rs, "phone");
                         enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
                         bio = text(rs, "bio");
                         instrumentAssetId = text(rs, "instrument_asset_id");
-                        birthDate = dateText(rs, "birth_date");
                         joinedAt = dateText(rs, "joined_at");
                     }
                 }
@@ -103,11 +103,11 @@
 
     if (name.isEmpty()) {
         name = "";
+        cohort = "";
         major = "";
         phone = "";
         enrolledText = "";
         email = "";
-        birthDate = "";
         joinedAt = "";
         bio = "";
         instrumentAssetId = "";
@@ -117,12 +117,12 @@
     }
 
     String formError = request.getParameter("error");
-    if ("birth".equals(formError)) {
-        saveMessage = "생년월일은 yyyy.MM.dd 형식으로 입력해주세요. 예: 2003.05.20";
-    } else if ("phone".equals(formError)) {
+    if ("phone".equals(formError)) {
         saveMessage = "전화번호는 010-1234-5678 형식으로 입력해주세요.";
     } else if ("name".equals(formError)) {
         saveMessage = "이름은 필수 입력입니다.";
+    } else if ("cohort".equals(formError)) {
+        saveMessage = "기수는 숫자로 입력해주세요.";
     }
 
     String memberDefaultImage = "assets/img/member/member.png";
@@ -197,9 +197,19 @@
                             <div class="control readonly-control"><%= html(name) %></div>
                         </div>
                         <div class="field">
-                            <label>생년월일</label>
-                            <input class="control" type="text" name="birthDate" value="<%= html(birthDate) %>"
-                                   pattern="\d{4}\.\d{2}\.\d{2}" placeholder="2003.05.20">
+                            <label>악기</label>
+                            <select class="control" name="instrumentAssetId">
+                                <option value="">선택 안 함</option>
+                                <% for (String[] option : instrumentOptions) { %>
+                                    <option value="<%= html(option[0]) %>" <%= option[0].equals(instrumentInfo[0]) ? "selected" : "" %>>
+                                        <%= html(option[1]) %> (<%= html(option[0]) %>)
+                                    </option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>기수</label>
+                            <div class="control readonly-control"><%= html(cohort) %></div>
                         </div>
                         <div class="field">
                             <label>학과</label>

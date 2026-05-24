@@ -4,7 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,7 +22,6 @@ public class ProfileUpdateServlet extends HttpServlet {
     private static final String URL = "jdbc:mariadb://localhost:3306/ohrm_db";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "1234";
-    private static final String BIRTH_DATE_REGEX = "^\\d{4}\\.\\d{2}\\.\\d{2}$";
     private static final String PHONE_REGEX = "^010-\\d{4}-\\d{4}$";
 
     @Override
@@ -38,7 +36,6 @@ public class ProfileUpdateServlet extends HttpServlet {
         }
 
         int studentId = sessionStudentId;
-        String birthDate = value(request, "birthDate");
         String major = value(request, "major");
         String phone = value(request, "phone");
         String bio = value(request, "bio");
@@ -46,23 +43,8 @@ public class ProfileUpdateServlet extends HttpServlet {
         String instrumentAssetId = value(request, "instrumentAssetId");
         boolean isEnrolled = Boolean.parseBoolean(value(request, "isEnrolled"));
 
-        if (!birthDate.isEmpty() && !birthDate.matches(BIRTH_DATE_REGEX)) {
-            redirect(response, "birth");
-            return;
-        }
-
         if (!phone.isEmpty() && !phone.matches(PHONE_REGEX)) {
             redirect(response, "phone");
-            return;
-        }
-
-        Date parsedBirthDate = null;
-        try {
-            if (!birthDate.isEmpty()) {
-                parsedBirthDate = Date.valueOf(birthDate.replace(".", "-"));
-            }
-        } catch (IllegalArgumentException e) {
-            redirect(response, "birth");
             return;
         }
 
@@ -71,14 +53,13 @@ public class ProfileUpdateServlet extends HttpServlet {
 
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(
-                    "UPDATE members SET birth_date = ?, major = ?, phone = ?, is_enrolled = ?, bio = ? WHERE student_id = ?"
+                    "UPDATE members SET major = ?, phone = ?, is_enrolled = ?, bio = ? WHERE student_id = ?"
                 )) {
-                    pstmt.setDate(1, parsedBirthDate);
-                    pstmt.setString(2, major);
-                    pstmt.setString(3, phone);
-                    pstmt.setBoolean(4, isEnrolled);
-                    pstmt.setString(5, bio);
-                    pstmt.setInt(6, studentId);
+                    pstmt.setString(1, major);
+                    pstmt.setString(2, phone);
+                    pstmt.setBoolean(3, isEnrolled);
+                    pstmt.setString(4, bio);
+                    pstmt.setInt(5, studentId);
                     pstmt.executeUpdate();
                 }
 
