@@ -9,7 +9,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import ohrm.util.AuthUtils;
 
 public class SignupServlet extends HttpServlet {
@@ -82,9 +81,7 @@ public class SignupServlet extends HttpServlet {
                 pstmt.executeUpdate();
             }
 
-            HttpSession session = request.getSession(true);
-            session.setAttribute("studentId", studentId);
-            response.sendRedirect("profile_modify.jsp");
+            response.sendRedirect("login.jsp?signup=success");
         } catch (SQLIntegrityConstraintViolationException e) {
             response.sendRedirect("signup.jsp?error=duplicate");
         } catch (Exception e) {
