@@ -32,24 +32,34 @@ public class LoginServlet extends HttpServlet {
         }
 
         String password = value(request, "password");
+        String role = "USER";
 
         try {
             Class.forName("org.mariadb.jdbc.Driver");
+            
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
                  PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT password_hash FROM members WHERE student_id = ?"
+                     "SELECT password_hash, role FROM members WHERE student_id = ?"
                  )) {
                 pstmt.setInt(1, studentId);
+                
                 try (ResultSet rs = pstmt.executeQuery()) {
+                    // 회원이 존재하지 않거나, 입력한 비밀번호가 암호화 해시와 매칭되지 않으면 리턴
                     if (!rs.next() || !AuthUtils.passwordMatches(password, rs.getString("password_hash"))) {
                         response.sendRedirect("login.jsp?error=1");
                         return;
                     }
+                    
+                    role = rs.getString("role");
                 }
             }
 
+            // 세션 저장소에 로그인 유저 명찰들을 바인딩
             HttpSession session = request.getSession(true);
             session.setAttribute("studentId", studentId);
+            session.setAttribute("user_id", studentId);
+            session.setAttribute("user_role", role); // session 에 role 저장
+            
             response.sendRedirect("index.jsp");
         } catch (Exception e) {
             throw new ServletException(e);

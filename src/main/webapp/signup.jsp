@@ -46,7 +46,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <title>오케스트라 회원 관리 시스템 - 회원가입</title>
+  <title>오케스트라 단원 관리 시스템 - 회원가입</title>
   <style>
     body { font-family: 'Pretendard', Arial, sans-serif; background: #f5f7fb; color: #111827; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; box-sizing: border-box; }
     .signup-container { background: #fff; width: 430px; padding: 36px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; box-sizing: border-box; }
@@ -70,7 +70,7 @@
 <div class="signup-container">
   <div class="logo-area">
     <h2><i class="bi bi-person-plus"></i> 신입 단원 가입</h2>
-    <p>오케스트라 회원 관리 시스템</p>
+    <p>오케스트라 단원 관리 시스템</p>
   </div>
 
   <% if (errorMsg != null) { %>
