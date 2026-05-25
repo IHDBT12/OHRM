@@ -57,6 +57,15 @@
     <servlet-name>PhotoDeleteServlet</servlet-name>
     <url-pattern>/photo-delete</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <servlet-name>ProfileDeleteServlet</servlet-name>
+    <servlet-class>ProfileDeleteServlet</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>ProfileDeleteServlet</servlet-name>
+    <url-pattern>/profile-delete</url-pattern>
+  </servlet-mapping>
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
     <welcome-file>index.jsp</welcome-file>
