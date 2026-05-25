@@ -5,6 +5,8 @@
 <%@ page import="java.sql.ResultSet" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="java.io.File" %>
+<%@ page import="java.util.LinkedHashMap" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
 <%
@@ -30,14 +32,22 @@
     String email = "";
     String joinedAt = "";
     String bio = "";
-    String instrumentAssetId = "";
+    String instrument = "";
     String memberImageUrl = "";
-    String instrumentImageUrl = "";
     String errorMessage = "";
-
-    String[] instrumentInfo = new String[] {
-        "", "", ""
-    };
+    Map<String, String> instMap = new LinkedHashMap<>();
+    instMap.put("violin", "바이올린");
+    instMap.put("viola", "비올라");
+    instMap.put("cello", "첼로");
+    instMap.put("contrabass", "콘트라베이스");
+    instMap.put("flute", "플루트");
+    instMap.put("oboe", "오보에");
+    instMap.put("clarinet", "클라리넷");
+    instMap.put("horn", "호른");
+    instMap.put("trumpet", "트럼펫");
+    instMap.put("trombone", "트롬본");
+    instMap.put("percussion", "타악기");
+    instMap.put("etc", "기타(악기 없음)");
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
@@ -56,24 +66,8 @@
                         enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
                         bio = text(rs, "bio");
-                        instrumentAssetId = text(rs, "instrument_asset_id");
+                        instrument = text(rs, "instrument");
                         joinedAt = dateText(rs, "joined_at");
-                    }
-                }
-            }
-
-            try (PreparedStatement pstmt = conn.prepareStatement(
-                "SELECT asset_id, instrument_name, owner_type " +
-                "FROM club_instruments WHERE asset_id = ?"
-            )) {
-                pstmt.setInt(1, instrumentAssetId.isEmpty() ? 0 : Integer.parseInt(instrumentAssetId));
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        instrumentInfo = new String[] {
-                            String.valueOf(rs.getInt("asset_id")),
-                            text(rs, "instrument_name"),
-                            text(rs, "owner_type")
-                        };
                     }
                 }
             }
@@ -93,10 +87,7 @@
         email = "";
         joinedAt = "";
         bio = "";
-        instrumentAssetId = "";
-        instrumentInfo = new String[] {
-            "", "", ""
-        };
+        instrument = "";
     }
 
     String memberDefaultImage = "assets/img/member/member.png";
@@ -106,14 +97,7 @@
         ? memberCandidateImage
         : memberDefaultImage;
 
-    String instrumentDefaultImage = "assets/img/instrument/instrument.png";
-    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[1].trim() + ".png";
-    String instrumentCandidatePath = application.getRealPath(instrumentCandidateImage);
-    instrumentImageUrl = instrumentInfo[0].trim().isEmpty()
-        || instrumentCandidatePath == null
-        || !new File(instrumentCandidatePath).exists()
-        ? instrumentDefaultImage
-        : instrumentCandidateImage;
+    String instrumentText = instMap.containsKey(instrument) ? instMap.get(instrument) : instrument;
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -165,7 +149,7 @@
                         </div>
                         <div class="field">
                             <label>악기</label>
-                            <div class="control"><%= html(instrumentInfo[1]) %></div>
+                            <div class="control"><%= html(instrumentText) %></div>
                         </div>
                         <div class="field">
                             <label>기수</label>

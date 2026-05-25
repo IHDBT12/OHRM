@@ -40,7 +40,7 @@ public class ProfileUpdateServlet extends HttpServlet {
         String phone = value(request, "phone");
         String bio = value(request, "bio");
         String newPassword = value(request, "newPassword");
-        String instrumentAssetId = value(request, "instrumentAssetId");
+        String instrument = value(request, "instrument");
         boolean isEnrolled = Boolean.parseBoolean(value(request, "isEnrolled"));
 
         if (!phone.isEmpty() && !phone.matches(PHONE_REGEX)) {
@@ -53,13 +53,14 @@ public class ProfileUpdateServlet extends HttpServlet {
 
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(
-                    "UPDATE members SET major = ?, phone = ?, is_enrolled = ?, bio = ? WHERE student_id = ?"
+                    "UPDATE members SET major = ?, phone = ?, is_enrolled = ?, bio = ?, instrument = ? WHERE student_id = ?"
                 )) {
                     pstmt.setString(1, major);
                     pstmt.setString(2, phone);
                     pstmt.setBoolean(3, isEnrolled);
                     pstmt.setString(4, bio);
-                    pstmt.setInt(5, studentId);
+                    pstmt.setString(5, instrument.isEmpty() ? null : instrument);
+                    pstmt.setInt(6, studentId);
                     pstmt.executeUpdate();
                 }
 
@@ -71,10 +72,6 @@ public class ProfileUpdateServlet extends HttpServlet {
                         pstmt.setInt(2, studentId);
                         pstmt.executeUpdate();
                     }
-                }
-
-                if (request.getParameter("instrumentAssetId") != null) {
-                    updateInstrument(conn, studentId, instrumentAssetId);
                 }
             }
 
@@ -92,44 +89,6 @@ public class ProfileUpdateServlet extends HttpServlet {
 
     private void redirect(HttpServletResponse response, String error) throws IOException {
         response.sendRedirect("profile_modify.jsp?error=" + error);
-    }
-
-    private void updateInstrument(Connection conn, int studentId, String instrumentAssetId) throws SQLException {
-        if (instrumentAssetId.isEmpty()) {
-            try (PreparedStatement pstmt = conn.prepareStatement(
-                "UPDATE members SET instrument_asset_id = NULL WHERE student_id = ?"
-            )) {
-                pstmt.setInt(1, studentId);
-                pstmt.executeUpdate();
-            }
-            return;
-        }
-
-        int assetId;
-        try {
-            assetId = Integer.parseInt(instrumentAssetId);
-        } catch (NumberFormatException e) {
-            return;
-        }
-
-        try (PreparedStatement pstmt = conn.prepareStatement(
-            "SELECT 1 FROM club_instruments WHERE asset_id = ?"
-        )) {
-            pstmt.setInt(1, assetId);
-            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
-                if (!rs.next()) {
-                    return;
-                }
-            }
-        }
-
-        try (PreparedStatement pstmt = conn.prepareStatement(
-            "UPDATE members SET instrument_asset_id = ? WHERE student_id = ?"
-        )) {
-            pstmt.setInt(1, assetId);
-            pstmt.setInt(2, studentId);
-            pstmt.executeUpdate();
-        }
     }
 
     private void saveProfileImage(HttpServletRequest request, int studentId) throws IOException, ServletException {

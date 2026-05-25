@@ -5,8 +5,8 @@
 <%@ page import="java.sql.ResultSet" %>
 <%@ page import="java.sql.SQLException" %>
 <%@ page import="java.io.File" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.List" %>
+<%@ page import="java.util.LinkedHashMap" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="ohrm.util.AuthUtils" %>
 <%@ page import="static ohrm.util.JspUtils.*" %>
 <%
@@ -33,14 +33,24 @@
     String email = "";
     String joinedAt = "";
     String bio = "";
-    String instrumentAssetId = "";
+    String instrument = "";
     String memberImageUrl = "";
-    String instrumentImageUrl = "";
     String errorMessage = "";
     String saveMessage = "";
 
-    String[] instrumentInfo = new String[] { "", "", "" };
-    List<String[]> instrumentOptions = new ArrayList<>();
+    Map<String, String> instMap = new LinkedHashMap<>();
+    instMap.put("violin", "바이올린");
+    instMap.put("viola", "비올라");
+    instMap.put("cello", "첼로");
+    instMap.put("contrabass", "콘트라베이스");
+    instMap.put("flute", "플루트");
+    instMap.put("oboe", "오보에");
+    instMap.put("clarinet", "클라리넷");
+    instMap.put("horn", "호른");
+    instMap.put("trumpet", "트럼펫");
+    instMap.put("trombone", "트롬본");
+    instMap.put("percussion", "타악기");
+    instMap.put("etc", "기타(악기 없음)");
 
     try {
         Class.forName("org.mariadb.jdbc.Driver");
@@ -60,42 +70,12 @@
                         enrolledText = rs.getBoolean("is_enrolled") ? "재학" : "휴학";
                         email = text(rs, "email");
                         bio = text(rs, "bio");
-                        instrumentAssetId = text(rs, "instrument_asset_id");
+                        instrument = text(rs, "instrument");
                         joinedAt = dateText(rs, "joined_at");
                     }
                 }
             }
 
-            try (PreparedStatement pstmt = conn.prepareStatement(
-                "SELECT asset_id, instrument_name, owner_type " +
-                "FROM club_instruments WHERE asset_id = ?"
-            )) {
-                pstmt.setInt(1, instrumentAssetId.isEmpty() ? 0 : Integer.parseInt(instrumentAssetId));
-
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        instrumentInfo = new String[] {
-                            String.valueOf(rs.getInt("asset_id")),
-                            text(rs, "instrument_name"),
-                            text(rs, "owner_type")
-                        };
-                    }
-                }
-            }
-
-            try (PreparedStatement pstmt = conn.prepareStatement(
-                "SELECT asset_id, instrument_name, owner_type " +
-                "FROM club_instruments ORDER BY asset_id"
-            );
-            ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    instrumentOptions.add(new String[] {
-                        String.valueOf(rs.getInt("asset_id")),
-                        text(rs, "instrument_name"),
-                        text(rs, "owner_type")
-                    });
-                }
-            }
         }
     } catch (ClassNotFoundException e) {
         errorMessage = "MariaDB JDBC 드라이버를 찾을 수 없습니다. WEB-INF/lib 폴더에 JAR 파일을 넣어주세요.";
@@ -123,15 +103,6 @@
         ? memberCandidateImage
         : memberDefaultImage;
 
-    String instrumentDefaultImage = "assets/img/instrument/instrument.png";
-    String instrumentCandidateImage = "assets/img/instrument/" + instrumentInfo[1].trim() + ".png";
-    String instrumentCandidatePath = application.getRealPath(instrumentCandidateImage);
-
-    instrumentImageUrl = instrumentInfo[0].trim().isEmpty()
-        || instrumentCandidatePath == null
-        || !new File(instrumentCandidatePath).exists()
-        ? instrumentDefaultImage
-        : instrumentCandidateImage;
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -190,11 +161,14 @@
 
                             <div class="field">
                                 <label>악기</label>
-                                <select class="control" name="instrumentAssetId">
+                                <select class="control" name="instrument">
                                     <option value="">선택 안 함</option>
-                                    <% for (String[] option : instrumentOptions) { %>
-                                        <option value="<%= html(option[0]) %>" <%= option[0].equals(instrumentInfo[0]) ? "selected" : "" %>>
-                                            <%= html(option[1]) %> (<%= html(option[0]) %>)
+                                    <% for (Map.Entry<String, String> entry : instMap.entrySet()) {
+                                        String key = entry.getKey();
+                                        String instName = entry.getValue();
+                                    %>
+                                        <option value="<%= html(key) %>" <%= key.equals(instrument) ? "selected" : "" %>>
+                                            <%= html(instName) %>
                                         </option>
                                     <% } %>
                                 </select>
