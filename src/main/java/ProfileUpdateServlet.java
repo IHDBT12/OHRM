@@ -22,7 +22,7 @@ public class ProfileUpdateServlet extends HttpServlet {
     private static final String URL = "jdbc:mariadb://localhost:3306/ohrm_db";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "1234";
-    private static final String PHONE_REGEX = "^010-\\d{4}-\\d{4}$";
+    private static final String PHONE_REGEX = "^010\\d{4}\\d{4}$";
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

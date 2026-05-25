@@ -106,7 +106,7 @@
     String formError = request.getParameter("error");
 
     if ("phone".equals(formError)) {
-        saveMessage = "전화번호는 010-1234-5678 형식으로 입력해주세요.";
+        saveMessage = "전화번호는 01012345678 형식으로 입력해주세요.";
     } else if ("name".equals(formError)) {
         saveMessage = "이름은 필수 입력입니다.";
     } else if ("cohort".equals(formError)) {
@@ -213,7 +213,7 @@
                             <div class="field">
                                 <label>전화번호</label>
                                 <input class="control" type="text" name="phone" value="<%= html(phone) %>"
-                                       pattern="010-\d{4}-\d{4}" placeholder="010-1234-5678">
+                                       pattern="010\d{4}\d{4}" placeholder="01012345678" maxlength="11">
                             </div>
 
                             <div class="field">
