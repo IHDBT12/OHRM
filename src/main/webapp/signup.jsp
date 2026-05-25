@@ -108,14 +108,6 @@
     </div>
 
     <div class="form-group">
-      <label for="isEnrolled">재학 여부</label>
-      <select name="isEnrolled" id="isEnrolled" class="form-input" required>
-        <option value="true">재학</option>
-        <option value="false">휴학</option>
-      </select>
-    </div>
-
-    <div class="form-group">
       <label for="instrument">악기</label>
       <select name="instrument" id="instrument" class="form-input">
         <%

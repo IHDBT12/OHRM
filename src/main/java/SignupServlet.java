@@ -43,7 +43,7 @@ public class SignupServlet extends HttpServlet {
             return;
         }
         String email = value(request, "email");
-        boolean isEnrolled = Boolean.parseBoolean(value(request, "isEnrolled"));
+        boolean isEnrolled = true;
         String instrument = value(request, "instrument");
 
         if (password.isEmpty() || name.isEmpty() || email.isEmpty() || cohort < 1) {
