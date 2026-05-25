@@ -208,7 +208,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>오케스트라 회원 관리 시스템-출결</title>
+<title>오케스트라 단원 관리 시스템-출결</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="assets/css/common.css">

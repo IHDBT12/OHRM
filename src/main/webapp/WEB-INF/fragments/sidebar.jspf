@@ -2,7 +2,7 @@
 <aside class="sidebar">
     <div class="brand">
         <div>
-            <div class="brand-title">오케스트라<br>회원 관리 시스템</div>
+            <div class="brand-title">오케스트라<br>단원 통합 관리 시스템</div>
             <div class="brand-subtitle">Orchestra Member System</div>
         </div>
     </div>
@@ -12,7 +12,7 @@
             <i class="bi bi-house-door"></i>홈
         </a>
         <a class="nav-item <%= "members".equals(activeMenu) ? "active" : "" %>" href="HRM_connect.jsp">
-            <i class="bi bi-people"></i>인원 소개
+            <i class="bi bi-people"></i>단원 소개
         </a>
         <a class="nav-item <%= "calendar".equals(activeMenu) ? "active" : "" %>" href="Calendar_page.jsp">
             <i class="bi bi-calendar3"></i>캘린더

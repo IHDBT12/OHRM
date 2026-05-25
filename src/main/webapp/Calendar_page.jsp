@@ -14,7 +14,7 @@
   }
 
   int studentId = sessionStudentId;
-  String activeMenu = "calendar"; // 사이드바 활성 메뉴 매칭
+  String activeMenu = "calendar";
   String name = "";
   String memberDefaultImage = "assets/img/member/member.png";
   String memberCandidateImage = "assets/img/member/" + studentId + ".png";
@@ -45,7 +45,7 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="assets/css/common.css">
-  <title>오케스트라 회원 관리 시스템 - 캘린더</title>
+  <title>오케스트라 단원 관리 시스템 - 캘린더</title>
   <style>
     body { font-family: 'Pretendard', sans-serif; background: #f5f7fb; color: #111827; }
     .content { padding: 30px; }
@@ -229,7 +229,7 @@
         </thead>
         <tbody>
         <%
-          // 디자인 레이아웃 깨짐을 100% 방어하는 단일 수치 기반 그리드 루프 구현
+          // 디자인 레이아웃 깨짐을 대비하는 단일 수치 기반 그리드 루프 구현
           int dayCounter = 1;
           int totalCells = ((daysInMonth + firstDayOfWeek - 1) <= 35) ? 35 : 42; 
 
