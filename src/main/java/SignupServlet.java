@@ -43,15 +43,20 @@ public class SignupServlet extends HttpServlet {
             return;
         }
         String email = value(request, "email");
+        String phone = value(request, "phone");
         boolean isEnrolled = true;
         String instrument = value(request, "instrument");
 
-        if (password.isEmpty() || name.isEmpty() || email.isEmpty() || cohort < 1) {
+        if (password.isEmpty() || name.isEmpty() || email.isEmpty() || phone.isEmpty() || cohort < 1) {
             response.sendRedirect("signup.jsp?error=empty");
             return;
         }
         if (!password.equals(passwordConfirm)) {
             response.sendRedirect("signup.jsp?error=password");
+            return;
+        }
+        if (!phone.matches("\\d{10,11}")) {
+            response.sendRedirect("signup.jsp?error=phone");
             return;
         }
         if (instrument.isEmpty()) {
@@ -69,7 +74,7 @@ public class SignupServlet extends HttpServlet {
                 pstmt.setString(2, AuthUtils.sha256(password));
                 pstmt.setString(3, name);
                 pstmt.setInt(4, cohort);
-                pstmt.setString(5, "");
+                pstmt.setString(5, phone);
                 pstmt.setString(6, email);
                 pstmt.setBoolean(7, isEnrolled);
                 pstmt.setDate(8, new Date(System.currentTimeMillis()));

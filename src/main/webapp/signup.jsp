@@ -32,6 +32,8 @@
     errorMsg = "필수 항목을 모두 입력해주세요.";
   } else if ("password".equals(error)) {
     errorMsg = "비밀번호와 비밀번호 확인이 일치하지 않습니다.";
+  } else if ("phone".equals(error)) {
+    errorMsg = "전화번호는 하이픈 없이 숫자 10~11자리로 입력해주세요.";
   } else if ("invalid".equals(error)) {
     errorMsg = "입력값을 다시 확인해주세요.";
   } else if (error != null) {
@@ -100,6 +102,11 @@
     <div class="form-group">
       <label for="email">이메일</label>
       <input type="email" name="email" id="email" class="form-input" required placeholder="orchestra@example.com">
+    </div>
+
+    <div class="form-group">
+      <label for="phone">전화번호</label>
+      <input type="text" name="phone" id="phone" class="form-input" required pattern="[0-9]{10,11}" maxlength="11" placeholder="01012345678">
     </div>
 
     <div class="form-group">
