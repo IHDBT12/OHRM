@@ -12,62 +12,62 @@ import jakarta.servlet.http.HttpSession;
 import ohrm.util.AuthUtils;
 
 public class LoginServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+ private static final long serialVersionUID = 1L;
+ private static final String URL = "jdbc:mariadb://localhost:3306/ohrm_db";
+ private static final String DB_USER = "root";
+ private static final String DB_PASSWORD = "1234";
 
-    private static final String URL = "jdbc:mariadb://localhost:3306/ohrm_db";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "1234";
+ @Override
+ protected void doPost(HttpServletRequest request, HttpServletResponse response)
+         throws ServletException, IOException {
+     request.setCharacterEncoding("UTF-8");
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        request.setCharacterEncoding("UTF-8");
+     int studentId;
+     try {
+         studentId = Integer.parseInt(value(request, "studentId"));
+     } catch (NumberFormatException e) {
+         response.sendRedirect("login.jsp?error=1");
+         return;
+     }
 
-        int studentId;
-        try {
-            studentId = Integer.parseInt(value(request, "studentId"));
-        } catch (NumberFormatException e) {
-            response.sendRedirect("login.jsp?error=1");
-            return;
-        }
+     String password = value(request, "password");
+     
+     String role = "USER"; 
 
-        String password = value(request, "password");
-        String role = "USER";
+     try {
+         Class.forName("org.mariadb.jdbc.Driver");
+         try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
+              PreparedStatement pstmt = conn.prepareStatement(
+                  "SELECT password_hash, role FROM members WHERE student_id = ?"
+              )) {
+             pstmt.setInt(1, studentId);
+             
+             try (ResultSet rs = pstmt.executeQuery()) {
+                 if (!rs.next() || !AuthUtils.passwordMatches(password, rs.getString("password_hash"))) {
+                     response.sendRedirect("login.jsp?error=1");
+                     return;
+                 }
+                 
+                 String dbRole = rs.getString("role");
+                 if (dbRole != null && !dbRole.trim().isEmpty()) {
+                     role = dbRole.trim().toUpperCase();
+                 }
+             }
+         }
 
-        try {
-            Class.forName("org.mariadb.jdbc.Driver");
-            
-            try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT password_hash, role FROM members WHERE student_id = ?"
-                 )) {
-                pstmt.setInt(1, studentId);
-                
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    // 회원이 존재하지 않거나, 입력한 비밀번호가 암호화 해시와 매칭되지 않으면 리턴
-                    if (!rs.next() || !AuthUtils.passwordMatches(password, rs.getString("password_hash"))) {
-                        response.sendRedirect("login.jsp?error=1");
-                        return;
-                    }
-                    
-                    role = rs.getString("role");
-                }
-            }
+         HttpSession session = request.getSession(true);
+         session.setAttribute("studentId", studentId);
+         session.setAttribute("user_id", studentId);
+         session.setAttribute("user_role", role);
+         
+         response.sendRedirect("index.jsp");
+     } catch (Exception e) {
+         throw new ServletException(e);
+     }
+ }
 
-            // 세션 저장소에 로그인 유저 명찰들을 바인딩
-            HttpSession session = request.getSession(true);
-            session.setAttribute("studentId", studentId);
-            session.setAttribute("user_id", studentId);
-            session.setAttribute("user_role", role); // session 에 role 저장
-            
-            response.sendRedirect("index.jsp");
-        } catch (Exception e) {
-            throw new ServletException(e);
-        }
-    }
-
-    private String value(HttpServletRequest request, String name) {
-        String value = request.getParameter(name);
-        return value == null ? "" : value.trim();
-    }
+ private String value(HttpServletRequest request, String name) {
+     String value = request.getParameter(name);
+     return value == null ? "" : value.trim();
+ }
 }
