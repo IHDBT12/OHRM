@@ -19,27 +19,65 @@
   String dbUser = "root";
   String dbPassword = "1234";
 
-  // 단원 강제 삭제 요청 처리
+  // [트랜잭션 적용] 단원 강제 삭제 요청 처리
   String deleteIdStr = request.getParameter("delete_student_id");
   if (deleteIdStr != null) {
+    Connection conn = null;
     try {
       Class.forName("org.mariadb.jdbc.Driver");
-      try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
-        String deleteSql = "DELETE FROM members WHERE student_id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
-          pstmt.setInt(1, Integer.parseInt(deleteIdStr));
-          pstmt.executeUpdate();
-        }
+      conn = DriverManager.getConnection(url, dbUser, dbPassword);
+      
+      // 수동 커밋 모드로 전환하여 트랜잭션(Transaction)을 시작합니다.
+      conn.setAutoCommit(false);
+
+      int targetStudentId = Integer.parseInt(deleteIdStr);
+
+      // [연관 데이터 처리] 탈퇴할 단원이 등록한 사진첩 앨범 데이터 처리
+      // 외래키(FK) 제약조건으로 인한 에러를 막기 위해 uploader_student_id를 NULL('미상')로 업데이트
+      String updateAlbumsSql = "UPDATE photo_albums SET uploader_student_id = NULL WHERE uploader_student_id = ?";
+      try (PreparedStatement pstmt1 = conn.prepareStatement(updateAlbumsSql)) {
+        pstmt1.setInt(1, targetStudentId);
+        pstmt1.executeUpdate();
       }
+
+      // [연관 데이터 처리] 만약 단원과 연결된 다른 매핑 테이블(출석, 회비 등)이 있다면 여기에 추가 쿼리를 작성
+
+      // [메인 데이터 처리] 최종적으로 members 테이블에서 해당 단원을 삭제
+      String deleteMemberSql = "DELETE FROM members WHERE student_id = ?";
+      try (PreparedStatement pstmt2 = conn.prepareStatement(deleteMemberSql)) {
+        pstmt2.setInt(1, targetStudentId);
+        pstmt2.executeUpdate();
+      }
+
+      // 모든 연관 쿼리가 단 하나도 실패하지 않고 성공했을 때만 최종 Commit
+      
+      conn.commit();
+
 %>
       <script>
-        alert("해당 단원이 성공적으로 삭제 처리되었습니다.");
+        alert("해당 단원 정보 및 연관 데이터가 트랜잭션 안에서 안전하게 삭제/정리 처리되었습니다.");
         location.href = "admin_member_management.jsp";
       </script>
 <%
       return;
     } catch (Exception e) {
-      out.println("<script>alert('삭제 실패: " + e.getMessage() + "');</script>");
+    	
+      // 실행 도중 에러가 발생하면 수행했던 모든 작업을 취소하고 초기 상태로 되돌립니다.
+      
+      if (conn != null) {
+        try { 
+          conn.rollback(); 
+        } catch (SQLException ex) {
+          ex.printStackTrace();
+        }
+      }
+      out.println("<script>alert('삭제 작업 실패 (데이터가 안전하게 롤백되었습니다): " + e.getMessage() + "'); history.back();</script>");
+      return;
+    } finally {
+      // 자원 반납 및 연결 종료
+      if (conn != null) {
+        try { conn.close(); } catch (SQLException ex) {}
+      }
     }
   }
 
@@ -204,15 +242,15 @@
                       <button type="submit" class="btn-custom btn-assign"><i class="bi bi-shield-plus"></i> 권한 부여</button>
                     </form>
                   <% } else { %>
-                    <form action="admin_member_management.jsp" method="post" onsubmit="return confirm('<%= name %> 관리자 권한을 회수하여 일반단원으로 변경하시겠습니까?');" style="margin:0; display: inline-block;">
+                    <form action="admin_member_management.jsp" method="post" onsubmit="return confirm('<%= name %> 관리자의 권한을 회수하여 일반단원으로 변경하시겠습니까?');" style="margin:0; display: inline-block;">
                       <input type="hidden" name="toggle_student_id" value="<%= sid %>">
-                      <input type="hidden" name="target_role" value="USER">
+                      <input type="hidden" name="target_role" value="MEMBER">
                       <button type="submit" class="btn-custom btn-demote"><i class="bi bi-shield-minus"></i> 권한 회수</button>
                     </form>
                   <% } %>
 
                   <% if(!isAdmin) { %>
-                    <form action="admin_member_management.jsp" method="post" onsubmit="return confirm('<%= name %> 단원을 정말 삭제하시겠습니까?');" style="margin:0; display: inline-block;">
+                    <form action="admin_member_management.jsp" method="post" onsubmit="return confirm('<%= name %> 단원을 정말 강제 탈퇴시키겠습니까?\n(탈퇴 시 해당 단원이 작성한 사진첩의 작성자 정보는 자동으로 미상 처리됩니다.)');" style="margin:0; display: inline-block;">
                       <input type="hidden" name="delete_student_id" value="<%= sid %>">
                       <button type="submit" class="btn-custom btn-danger"><i class="bi bi-trash3"></i> 삭제</button>
                     </form>
