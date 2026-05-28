@@ -51,7 +51,7 @@
                 Class.forName("org.mariadb.jdbc.Driver");
                 try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword)) {
                     String authSql = "SELECT uploader_student_id FROM photo_albums WHERE photo_id = ?";
-                    boolean isOwnerOrAdmin = "ADMIN".equals(userRole);
+                    boolean isOwnerOrAdmin = "ADMIN".equalsIgnoreCase(userRole) || "MASTER".equalsIgnoreCase(userRole);
                     if (!isOwnerOrAdmin) {
                         try (PreparedStatement pstmt = conn.prepareStatement(authSql)) {
                             pstmt.setInt(1, photoId);
@@ -148,7 +148,7 @@
     String memberCandidatePath = application.getRealPath(memberCandidateImage);
     memberImageUrl = memberCandidatePath != null && new File(memberCandidatePath).exists() ? memberCandidateImage : memberDefaultImage;
 
-    boolean canEdit = ("ADMIN".equals(userRole) || studentId == uploaderStudentId);
+    boolean canEdit = ("ADMIN".equalsIgnoreCase(userRole) || "MASTER".equalsIgnoreCase(userRole) || studentId == uploaderStudentId);
     long cacheBuster = System.currentTimeMillis();
 %>
 <!DOCTYPE html>

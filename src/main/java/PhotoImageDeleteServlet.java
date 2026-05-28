@@ -51,8 +51,8 @@ public class PhotoImageDeleteServlet extends HttpServlet {
             Class.forName("org.mariadb.jdbc.Driver");
             try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
                 
-                // 권한 확인: ADMIN이거나 본인이 업로드한 글인지 체크
-                boolean isOwnerOrAdmin = "ADMIN".equals(userRole);
+                // 권한 확인: ADMIN/MASTER이거나 본인이 업로드한 글인지 체크
+                boolean isOwnerOrAdmin = isAdminRole(userRole);
                 if (!isOwnerOrAdmin) {
                     String authSql = "SELECT uploader_student_id FROM photo_albums WHERE photo_id = ?";
                     try (PreparedStatement pstmt = conn.prepareStatement(authSql)) {
@@ -113,5 +113,9 @@ public class PhotoImageDeleteServlet extends HttpServlet {
         }
 
         response.sendRedirect("photo.jsp?id=" + photoId);
+    }
+
+    private boolean isAdminRole(String userRole) {
+        return "ADMIN".equalsIgnoreCase(userRole) || "MASTER".equalsIgnoreCase(userRole);
     }
 }

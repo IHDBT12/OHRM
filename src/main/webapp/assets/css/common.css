@@ -24,13 +24,16 @@ body {
 }
 
 .sidebar {
+    min-height: 100vh;
     padding: 24px 18px;
     background: var(--navy);
     color: #fff;
+    font-family: Arial, "Noto Sans KR", sans-serif;
 }
 
 .brand {
     margin-bottom: 42px;
+    line-height: 1.25;
 }
 
 .brand-title {
@@ -57,12 +60,18 @@ body {
     padding: 0 14px;
     border-radius: 8px;
     color: #fff;
+    font-size: 16px;
     font-weight: 700;
+    line-height: 1;
     text-decoration: none;
 }
 
 .nav-item.active {
     background: var(--gold);
+}
+
+.main {
+    min-width: 0;
 }
 
 .topbar {
@@ -73,6 +82,7 @@ body {
     padding: 0 34px;
     background: #fff;
     border-bottom: 1px solid var(--line);
+    font-family: Arial, "Noto Sans KR", sans-serif;
 }
 
 .user-chip {
@@ -206,6 +216,10 @@ h1 {
 @media (max-width: 780px) {
     .app-shell {
         grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        min-height: auto;
     }
 
     .nav-list {

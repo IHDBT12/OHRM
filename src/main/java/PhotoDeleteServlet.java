@@ -3,11 +3,13 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import ohrm.util.AuthUtils;
 import ohrm.util.UploadPathUtils;
 
@@ -23,7 +25,8 @@ public class PhotoDeleteServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
-        if (AuthUtils.currentStudentId(request) == null) {
+        Integer currentStudentId = AuthUtils.currentStudentId(request);
+        if (currentStudentId == null) {
             response.sendRedirect("login.jsp");
             return;
         }
@@ -36,12 +39,21 @@ public class PhotoDeleteServlet extends HttpServlet {
             return;
         }
 
+        HttpSession session = request.getSession(false);
+        String userRole = session == null ? "" : (String) session.getAttribute("user_role");
+
         try {
             Class.forName("org.mariadb.jdbc.Driver");
-            try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
-                 PreparedStatement pstmt = conn.prepareStatement("DELETE FROM photo_albums WHERE photo_id = ?")) {
-                pstmt.setInt(1, photoId);
-                pstmt.executeUpdate();
+            try (Connection conn = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD)) {
+                if (!canManagePhoto(conn, photoId, currentStudentId, userRole)) {
+                    response.sendRedirect("photo.jsp?id=" + photoId + "&error=forbidden");
+                    return;
+                }
+
+                try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM photo_albums WHERE photo_id = ?")) {
+                    pstmt.setInt(1, photoId);
+                    pstmt.executeUpdate();
+                }
             }
 
             deletePhotoFolder(photoId);
@@ -50,6 +62,25 @@ public class PhotoDeleteServlet extends HttpServlet {
         }
 
         response.sendRedirect("photo_album.jsp?deleted=1");
+    }
+
+    private boolean canManagePhoto(Connection conn, int photoId, int currentStudentId, String userRole) throws Exception {
+        if (isAdminRole(userRole)) {
+            return true;
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(
+            "SELECT uploader_student_id FROM photo_albums WHERE photo_id = ?"
+        )) {
+            pstmt.setInt(1, photoId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next() && rs.getInt("uploader_student_id") == currentStudentId;
+            }
+        }
+    }
+
+    private boolean isAdminRole(String userRole) {
+        return "ADMIN".equalsIgnoreCase(userRole) || "MASTER".equalsIgnoreCase(userRole);
     }
 
     private void deletePhotoFolder(int photoId) {
