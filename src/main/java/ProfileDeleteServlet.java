@@ -48,12 +48,11 @@ public class ProfileDeleteServlet extends HttpServlet {
             // 관련 데이터 삭제
             deleteByStudentId(conn, "concert_attendance", studentId);
             deleteByStudentId(conn, "practice_record", studentId);
-            deleteByStudentId(conn, "practice_records", studentId);
             deleteByStudentId(conn, "attendance", studentId);
             deleteByStudentId(conn, "practice", studentId);
             deleteByStudentId(conn, "member_photos", studentId);
 
-            // 회원 삭제
+            // practice_records는 members.student_id FK cascade로 함께 삭제된다.
             deleteMember(conn, studentId);
 
             conn.commit();
