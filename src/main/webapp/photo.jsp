@@ -181,6 +181,8 @@
             transition: all 0.2s ease-in-out;
             line-height: 1.2;
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            white-space: nowrap;
+            min-width: max-content;
         }
         .btn-custom.btn-list { background-color: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
         .btn-custom.btn-list:hover { background-color: #e5e7eb; color: #1f2937; }
